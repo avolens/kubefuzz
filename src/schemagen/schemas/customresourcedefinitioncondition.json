@@ -1,0 +1,32 @@
+{
+  "description": "CustomResourceDefinitionCondition contains details for the current condition of this pod.",
+  "type": "object",
+  "required": [
+    "type",
+    "status"
+  ],
+  "properties": {
+    "lastTransitionTime": {
+      "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "message": {
+      "description": "message is a human-readable message indicating details about last transition.",
+      "type": "string"
+    },
+    "reason": {
+      "description": "reason is a unique, one-word, CamelCase reason for the condition's last transition.",
+      "type": "string"
+    },
+    "status": {
+      "description": "status is the status of the condition. Can be True, False, Unknown.",
+      "type": "string"
+    },
+    "type": {
+      "description": "type is the type of the condition. Types include Established, NamesAccepted and Terminating.",
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/schema#"
+}

@@ -1,0 +1,31 @@
+{
+  "description": "DaemonSetUpdateStrategy is a struct used to control the update strategy for a DaemonSet.",
+  "type": "object",
+  "properties": {
+    "rollingUpdate": {
+      "description": "Spec to control the desired behavior of daemon set rolling update.",
+      "type": "object",
+      "properties": {
+        "maxSurge": {
+          "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
+          "type": "string",
+          "format": "int-or-string"
+        },
+        "maxUnavailable": {
+          "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
+          "type": "string",
+          "format": "int-or-string"
+        }
+      }
+    },
+    "type": {
+      "description": "Type of daemon set update. Can be \"RollingUpdate\" or \"OnDelete\". Default is RollingUpdate.\n\nPossible enum values:\n - `\"OnDelete\"` Replace the old daemons only when it's killed\n - `\"RollingUpdate\"` Replace the old daemons by new ones using rolling update i.e replace them on each node one after the other.",
+      "type": "string",
+      "enum": [
+        "OnDelete",
+        "RollingUpdate"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/schema#"
+}

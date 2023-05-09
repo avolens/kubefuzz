@@ -1,0 +1,8 @@
+kind: Cluster
+
+# this is just the api version of the kind config, not the k8s api version!
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  image: kindest/node:v1.27.0
+

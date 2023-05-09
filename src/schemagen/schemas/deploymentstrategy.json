@@ -1,0 +1,31 @@
+{
+  "description": "DeploymentStrategy describes how to replace existing pods with new ones.",
+  "type": "object",
+  "properties": {
+    "rollingUpdate": {
+      "description": "Spec to control the desired behavior of rolling update.",
+      "type": "object",
+      "properties": {
+        "maxSurge": {
+          "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
+          "type": "string",
+          "format": "int-or-string"
+        },
+        "maxUnavailable": {
+          "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
+          "type": "string",
+          "format": "int-or-string"
+        }
+      }
+    },
+    "type": {
+      "description": "Type of deployment. Can be \"Recreate\" or \"RollingUpdate\". Default is RollingUpdate.\n\nPossible enum values:\n - `\"Recreate\"` Kill all existing pods before creating new ones.\n - `\"RollingUpdate\"` Replace the old ReplicaSets by new one using rolling update i.e gradually scale down the old ReplicaSets and scale up the new one.",
+      "type": "string",
+      "enum": [
+        "Recreate",
+        "RollingUpdate"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/schema#"
+}

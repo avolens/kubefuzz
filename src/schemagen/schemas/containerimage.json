@@ -1,0 +1,19 @@
+{
+  "description": "Describe a container image",
+  "type": "object",
+  "properties": {
+    "names": {
+      "description": "Names by which this image is known. e.g. [\"kubernetes.example/hyperkube:v1.0.7\", \"cloud-vendor.registry.example/cloud-vendor/hyperkube:v1.0.7\"]",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sizeBytes": {
+      "description": "The size of the image in bytes.",
+      "type": "integer",
+      "format": "int64"
+    }
+  },
+  "$schema": "http://json-schema.org/schema#"
+}
