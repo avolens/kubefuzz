@@ -1,5 +1,7 @@
 # Kubefuzz
 
+![](arch/architecture.drawio.png)
+
 Chain of validating and mutating admission controllers can become complex. **What manifests might unexpectedly get accepted/rejected?**
 
 ## Challenges to solve
@@ -10,7 +12,8 @@ Chain of validating and mutating admission controllers can become complex. **Wha
 
 ## The mutator
 
-todo
+- Input: Kubernetes resource scheme, User config with fields to fuzz
+- Output: mutated manifests
 
 ## Future Ideas
 
