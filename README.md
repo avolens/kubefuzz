@@ -17,4 +17,4 @@ Chain of validating and mutating admission controllers can become complex. **Wha
 
 ## Future Ideas
 
-Fuzz CIL language directly
+Fuzz CEL language directly
