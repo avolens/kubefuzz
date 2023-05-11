@@ -15,7 +15,7 @@ pub struct KubernetesResourceSpec {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DetailedFieldconfig {
-    path: String,
+    pub path: String,
     values: Vec<serde_json::Value>,
     optional: Option<bool>,
 
@@ -24,7 +24,7 @@ pub struct DetailedFieldconfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Fieldconfig {
+pub enum FieldConfig {
     String(String),
     Struct(DetailedFieldconfig),
 }
@@ -33,5 +33,5 @@ pub enum Fieldconfig {
 pub struct ConstraintConfig {
     pub resource_name: String,
     pub mode: Mode,
-    pub fields: Vec<Fieldconfig>,
+    pub fields: Vec<FieldConfig>,
 }
