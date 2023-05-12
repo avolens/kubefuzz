@@ -23,7 +23,7 @@ pub fn loadspec(specname: String) -> K8sResourceSpec {
 }
 
 fn apply_whitelist_to_schema(
-    whitelist: &mut Vec<String>,
+    allowlist: &mut Vec<String>,
     mut object: serde_json::Value,
     jsonpath: &String,
 ) -> serde_json::Value {
@@ -69,11 +69,11 @@ fn apply_whitelist_to_schema(
         // we also dont have to go into it, thus it goes neither
         // to remove or recurse
 
-        if whitelist.contains(&new_path) {
+        if allowlist.contains(&new_path) {
             // update whitelist so caller sees every jsonpath not used.
             // we can also remove any path that starts with this one
             // we can now delete all paths that start with this one
-            let mut positions: Vec<usize> = whitelist
+            let mut positions: Vec<usize> = allowlist
                 .iter()
                 .enumerate()
                 .filter_map(|(i, s)| {
@@ -88,8 +88,8 @@ fn apply_whitelist_to_schema(
             // so we dont deal with shifting indices
             positions.reverse();
             for p in positions {
-                debug!("retaining property  {}", whitelist[p]);
-                whitelist.remove(p);
+                debug!("retaining property  {}", allowlist[p]);
+                allowlist.remove(p);
             }
 
             // do not recurse or remove the path. We can simply
@@ -97,7 +97,7 @@ fn apply_whitelist_to_schema(
             continue;
         }
 
-        if !(whitelist.iter().any(|s| s.starts_with(&new_path))) {
+        if !(allowlist.iter().any(|s| s.starts_with(&new_path))) {
             // value does not match any whitelist path partially
             remove_properties.push(key.clone());
         } else {
@@ -123,52 +123,44 @@ fn apply_whitelist_to_schema(
     // apply whitelist to all sub properties
     for (k, p) in recurse_properties {
         let changed_value = properties.as_object_mut().unwrap().get_mut(&k).unwrap();
-        *changed_value = apply_whitelist_to_schema(whitelist, changed_value.clone(), &p);
+        *changed_value = apply_whitelist_to_schema(allowlist, changed_value.clone(), &p);
     }
 
     object
 }
 
-pub fn apply_constaintfile(path: &str, mut spec: K8sResourceSpec) -> K8sResourceSpec {
-    info!("Reading constraint file: {:?}", path);
-    let rawcontent = std::fs::read_to_string(path).expect("Unable to read constraint file");
+pub fn load_constrained_spec(
+    constraintfile_path: &str,
+    mut spec: K8sResourceSpec,
+) -> K8sResourceSpec {
+    info!("Reading constraint file: {:?}", constraintfile_path);
+    let rawcontent =
+        std::fs::read_to_string(constraintfile_path).expect("Unable to read constraint file");
 
     let constraint_config: ConstraintConfig =
         serde_json::from_str(&rawcontent).expect("Unable to parse constraint file");
 
-    match constraint_config.mode {
-        // TODO: we can proably join both modes into the same function
-        crate::conf::Mode::Whitelist => {
-            // start with the original spec
-            // and gradually remove fields
+    // first collect all allowed jsonpath into simple list
 
-            // first collect all allowed jsonpath into simple list
+    let mut allowlist: Vec<String> = constraint_config
+        .fields
+        .iter()
+        .map(|field| match field {
+            crate::conf::FieldConfig::String(s) => s.clone(),
+            crate::conf::FieldConfig::Struct(s) => s.path.clone(),
+        })
+        .collect();
 
-            let mut whitelist: Vec<String> = constraint_config
-                .fields
-                .iter()
-                .map(|field| match field {
-                    crate::conf::FieldConfig::String(s) => s.clone(),
-                    crate::conf::FieldConfig::Struct(s) => s.path.clone(),
-                })
-                .collect();
+    spec.resource_spec =
+        apply_whitelist_to_schema(&mut allowlist, spec.resource_spec, &String::from("$"));
 
-            spec.resource_spec =
-                apply_whitelist_to_schema(&mut whitelist, spec.resource_spec, &String::from("$"));
-
-            for w in whitelist {
-                error_exit!(
-                    "invalid path '{}' for spec '{}' stemming from constraintfile '{}'",
-                    w,
-                    spec.resource_name,
-                    path
-                );
-            }
-            spec
-        }
-
-        crate::conf::Mode::Blacklist => {
-            todo!();
-        }
+    for w in allowlist {
+        error_exit!(
+            "invalid path '{}' for spec '{}' stemming from constraintfile '{}'",
+            w,
+            spec.resource_name,
+            constraintfile_path
+        );
     }
+    spec
 }

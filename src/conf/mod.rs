@@ -1,14 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Mode {
-    #[serde(rename = "whitelist")]
-    Whitelist,
-    #[serde(rename = "blacklist")]
-    Blacklist,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct DetailedFieldconfig {
     pub path: String,
     values: Vec<serde_json::Value>,
@@ -27,6 +19,5 @@ pub enum FieldConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConstraintConfig {
     pub resource_name: String,
-    pub mode: Mode,
     pub fields: Vec<FieldConfig>,
 }
