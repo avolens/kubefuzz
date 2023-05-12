@@ -1,4 +1,4 @@
-use crate::conf::ConstraintConfig;
+use crate::{conf::ConstraintConfig, error_exit};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
@@ -23,7 +23,7 @@ pub fn loadspec(specname: String) -> K8sResourceSpec {
 }
 
 fn apply_whitelist_to_schema(
-    whitelist: &Vec<String>,
+    whitelist: &mut Vec<String>,
     mut object: serde_json::Value,
     jsonpath: &String,
 ) -> serde_json::Value {
@@ -68,8 +68,32 @@ fn apply_whitelist_to_schema(
         // if we whitelisted the whole key, we can skip it.
         // we also dont have to go into it, thus it goes neither
         // to remove or recurse
+
         if whitelist.contains(&new_path) {
-            debug!("retaining property {}", new_path);
+            // update whitelist so caller sees every jsonpath not used.
+            // we can also remove any path that starts with this one
+            // we can now delete all paths that start with this one
+            let mut positions: Vec<usize> = whitelist
+                .iter()
+                .enumerate()
+                .filter_map(|(i, s)| {
+                    if s.starts_with(&new_path) {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            // so we dont deal with shifting indices
+            positions.reverse();
+            for p in positions {
+                debug!("retaining property  {}", whitelist[p]);
+                whitelist.remove(p);
+            }
+
+            // do not recurse or remove the path. We can simply
+            // ignore this whole subtree
             continue;
         }
 
@@ -120,7 +144,7 @@ pub fn apply_constaintfile(path: &str, mut spec: K8sResourceSpec) -> K8sResource
 
             // first collect all allowed jsonpath into simple list
 
-            let whitelist: Vec<String> = constraint_config
+            let mut whitelist: Vec<String> = constraint_config
                 .fields
                 .iter()
                 .map(|field| match field {
@@ -130,8 +154,16 @@ pub fn apply_constaintfile(path: &str, mut spec: K8sResourceSpec) -> K8sResource
                 .collect();
 
             spec.resource_spec =
-                apply_whitelist_to_schema(&whitelist, spec.resource_spec, &String::from("$"));
+                apply_whitelist_to_schema(&mut whitelist, spec.resource_spec, &String::from("$"));
 
+            for w in whitelist {
+                error_exit!(
+                    "invalid path '{}' for spec '{}' stemming from constraintfile '{}'",
+                    w,
+                    spec.resource_name,
+                    path
+                );
+            }
             spec
         }
 

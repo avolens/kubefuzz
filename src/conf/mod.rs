@@ -8,11 +8,6 @@ pub enum Mode {
     Blacklist,
 }
 
-pub struct KubernetesResourceSpec {
-    pub resource_name: String,
-
-    pub resource_spec: serde_json::Value,
-}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DetailedFieldconfig {
     pub path: String,
