@@ -19,8 +19,8 @@ pub struct K8sResourceSpec {
     #[serde(default)]
     pub properties: HashMap<String, Box<K8sResourceSpec>>,
 
-    #[serde(rename = "enum")]
-    pub _enum: Option<Vec<String>>,
+    #[serde(rename = "enum", default)]
+    pub _enum: Vec<String>,
 
     #[serde(default)]
     pub required: Vec<String>,
