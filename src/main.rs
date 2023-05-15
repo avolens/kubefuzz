@@ -13,5 +13,7 @@ mod mutator;
 
 fn main() {
     log::initlog();
-    let slim_constraint = load_constrained_spec("constraint.json", loadspec("pod".to_string()));
+    let slim_constraint = load_constrained_spec("constraint.json", "pod");
+
+    println!("slim constraint: {:#?}", slim_constraint);
 }
