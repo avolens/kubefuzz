@@ -4,7 +4,10 @@
     "fields" : [
         "$.apiVersion",
         "$.kind",
-        "$.status.startTime",
-        "$.status"
+        "$.status",
+        {
+        "path" : "$.status.podIP",
+        "values" : ["192.168.1.1","1.1.1.1"],
+        "required" : true}
     ]
 }

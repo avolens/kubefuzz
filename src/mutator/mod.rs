@@ -129,7 +129,7 @@ fn constrain_spec(
         if constraintconfig
             .fields
             .iter()
-            .any(|fcfg| fcfg.path.starts_with(&curpath))
+            .any(|fcfg| curpath.starts_with(&fcfg.path))
         {
             recurse_properties.push((key.clone(), curpath));
         } else {
@@ -139,7 +139,7 @@ fn constrain_spec(
 
     // remove all properties that are not on the allowlist
     for k in remove_properties {
-        debug!("removing property {}", k);
+        debug!("removing property {}", format!("{}.{}", jsonpath, &k));
 
         if spec.required.contains(&k) {
             warn!(
