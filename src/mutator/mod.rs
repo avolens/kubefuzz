@@ -4,6 +4,9 @@ use core::iter::Map;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File};
 use std::{fs, path::PathBuf};
+
+pub mod gen;
+pub mod rand;
 /*
 This struct represents the swagger spec json structure
 of the k8s API. It has more fields like description and

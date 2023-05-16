@@ -5,15 +5,18 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log as rust_log;
 
+use mutator::gen::gen_resource;
 use mutator::{load_constrained_spec, loadspec};
-
 mod conf;
 mod log;
 mod mutator;
 
 fn main() {
     log::initlog();
+    mutator::rand::seedrand();
     let slim_constraint = load_constrained_spec("constraint.json", "pod");
 
-    println!("slim constraint: {:#?}", slim_constraint);
+    let resc = gen_resource(&slim_constraint);
+
+    println!("{}", serde_json::to_string_pretty(&resc).unwrap());
 }
