@@ -33,6 +33,25 @@ pub struct K8sResourceSpec {
     pub additional_properties: Option<Box<K8sResourceSpec>>,
 }
 
+pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
+    let vectorized_path = path.split(".").collect::<Vec<&str>>();
+
+    for each in &constraintconfig.fields {
+        let vectorized_allow = each.path.split(".").collect::<Vec<&str>>();
+
+        for (i, each) in vectorized_allow.iter().enumerate() {
+            if each != &vectorized_path[i] {
+                break;
+            }
+            if vectorized_allow.len() - 1 == i || vectorized_path.len() - 1 == i {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 pub fn loadspec(specname: &str) -> K8sResourceSpec {
     let fullpath = PathBuf::from("schemagen/schemas/")
         .join(specname.clone())
@@ -60,7 +79,7 @@ fn constrain_spec(
     */
 
     // if this a leaf node (terminal property), we can stop here
-    if spec.properties.is_empty() {
+    if spec.properties.is_empty() && spec._type != "array" {
         return;
     }
 
@@ -69,9 +88,15 @@ fn constrain_spec(
     let mut remove_properties = vec![];
     let mut recurse_properties = vec![];
 
-    for (key, subspec) in spec.properties.iter_mut() {
-        let curpath = format!("{}.{}", jsonpath, key);
+    let toiter = if spec._type != "array" {
+        spec.properties.iter_mut()
+    } else {
+        assert!(spec.properties.is_empty());
+        spec.items.as_mut().unwrap().properties.iter_mut()
+    };
 
+    for (key, subspec) in toiter {
+        let curpath = format!("{}.{}", jsonpath, key);
         /*
         if the current path is in the allowlist, we can
         apply the constraint by adding enums and modifying
@@ -129,11 +154,9 @@ fn constrain_spec(
 
         // If we dont have an exact match, we might have a partial one
         // in which case we have to go deeper. If not even a partial
-        if constraintconfig
-            .fields
-            .iter()
-            .any(|fcfg| curpath.starts_with(&fcfg.path))
-        {
+        debug!("checking partial match for field '{}'", curpath);
+
+        if path_allowed(&curpath, &constraintconfig) {
             recurse_properties.push((key.clone(), curpath));
         } else {
             remove_properties.push(key.clone());
@@ -151,13 +174,28 @@ fn constrain_spec(
             );
         }
 
-        spec.properties.remove(&k).unwrap();
+        // if we are dealing with an array, we have to delete from items.properties
+        if spec._type == "array" {
+            spec.items.as_mut().unwrap().properties.remove(&k).unwrap();
+        } else {
+            spec.properties.remove(&k).unwrap();
+        }
     }
 
     // apply allowlist to all sub properties
     for (prop, path) in recurse_properties {
-        let prop: &mut Box<K8sResourceSpec> = spec.properties.get_mut(&prop).expect("missing prop");
-        constrain_spec(&constraintconfig, &mut *prop, &path, paths_covered);
+        // if we are dealing with an array, we have to recurse into items.properties
+        let resc: &mut Box<K8sResourceSpec> = if spec._type == "array" {
+            spec.items
+                .as_mut()
+                .unwrap()
+                .properties
+                .get_mut(&prop)
+                .expect("missing prop")
+        } else {
+            spec.properties.get_mut(&prop).expect("missing prop")
+        };
+        constrain_spec(&constraintconfig, &mut *resc, &path, paths_covered);
     }
 }
 

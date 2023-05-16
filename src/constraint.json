@@ -1,13 +1,14 @@
 {
     "resource_name" : "pod",
-    "mode" : "whitelist",
     "fields" : [
-        "$.apiVersion",
-        "$.kind",
-        "$.status",
+       
         {
         "path" : "$.status.podIP",
         "values" : ["192.168.1.1","1.1.1.1"],
-        "required" : true}
+        "required" : true},
+
+    {"path":"$.spec.containers.securityContext.privileged","values":[true],"required":true},
+    {"path":"$.spec.volumes","required":true},
+    {"path":"$.spec.volumes.downwardAPI.items","required":true}
     ]
 }
