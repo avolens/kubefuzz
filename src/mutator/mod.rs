@@ -136,6 +136,7 @@ fn constrain_spec(
                 }
 
                 // at last, lets update the required field
+                // TODO: make sure we propagate required upwards!
                 match &fcnfg.required {
                     Some(required) => {
                         if *required {
