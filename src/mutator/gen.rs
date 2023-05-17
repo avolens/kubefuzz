@@ -10,9 +10,30 @@ fn gen_bool() -> serde_json::Value {
     serde_json::Value::Bool(gen_range(0, 2) == 1)
 }
 
+fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
+    assert!(spec.items.is_some());
+    let items = spec.items.as_ref().unwrap();
+    let mut arr = serde_json::Value::Array(vec![]);
+    debug!("generating array");
+
+    // TODO: make min max configurable
+    for _ in 0..gen_range(1, 20) {
+        arr.as_array_mut()
+            .unwrap()
+            .push(match items._type.as_str() {
+                "string" => gen_string(),
+                "boolean" => gen_bool(),
+                "integer" => serde_json::Value::Number(rand_i64().into()),
+                "object" => gen_property(&items),
+                "array" => panic!("nested arrays not supported"),
+                &_ => panic!("schema type not known"),
+            });
+    }
+    return arr;
+}
+
 pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
     // TODO: ensure that the types always match!
-
     if !spec._enum.is_empty() {
         return spec._enum[gen_range(0, spec._enum.len())].clone();
     }
@@ -35,17 +56,20 @@ pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
             .collect();
 
         // TODO: make this use our RNG
-        optionalprops.shuffle(&mut rand::thread_rng());
 
-        let num_optional = gen_range(0, optionalprops.len() + 1);
+        if !optionalprops.is_empty() {
+            optionalprops.shuffle(&mut rand::thread_rng());
 
-        for opt in optionalprops[0..num_optional].to_vec() {
-            to_generate.push(opt);
+            let num_optional = gen_range(1, optionalprops.len() + 1);
+
+            for opt in optionalprops[0..num_optional].to_vec() {
+                to_generate.push(opt);
+            }
         }
 
-        debug!("generating object {:?}", to_generate);
-        for req in to_generate {
-            ret[req.as_str()] = gen_property(&spec.properties[req.as_str()]);
+        for prop in to_generate {
+            debug!("generating object {:?}", prop);
+            ret[prop.as_str()] = gen_property(&spec.properties[prop.as_str()]);
         }
         return ret;
     }
@@ -54,7 +78,7 @@ pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
     match spec._type.as_str() {
         "string" => return gen_string(),
         "boolean" => return gen_bool(),
-        "array" => return serde_json::Value::Array(vec![]),
+        "array" => return gen_array(spec),
         "integer" => return serde_json::Value::Number(rand_i64().into()),
 
         &_ => panic!("type not covered"),
