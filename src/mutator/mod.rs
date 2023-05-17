@@ -165,21 +165,32 @@ fn constrain_spec(
     }
 
     // remove all properties that are not on the allowlist
-    for k in remove_properties {
-        debug!("removing property {}", format!("{}.{}", jsonpath, &k));
+    // first get all required fields, depending on the type "array" or other
+    let req_vals = match spec._type.as_str() {
+        "array" => &spec.items.as_ref().unwrap().required,
+        &_ => &spec.required,
+    };
 
-        if spec.required.contains(&k) {
+    // check if we are removing required values
+    for k in &remove_properties {
+        if req_vals.contains(k) {
             warn!(
                 "removing a required field '{}.{}'. K8s will API probably reject this",
                 jsonpath, &k
             );
         }
+    }
 
+    // now remove
+    for k in &remove_properties {
+        debug!("removing property {}", format!("{}.{}", jsonpath, &k));
         // if we are dealing with an array, we have to delete from items.properties
         if spec._type == "array" {
-            spec.items.as_mut().unwrap().properties.remove(&k).unwrap();
+            spec.items.as_mut().unwrap().properties.remove(k).unwrap();
+            spec.items.as_mut().unwrap().required.retain(|x| x != k);
         } else {
-            spec.properties.remove(&k).unwrap();
+            spec.properties.remove(k).unwrap();
+            spec.required.retain(|x| x != k);
         }
     }
 
