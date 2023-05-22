@@ -1,3 +1,4 @@
+use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
@@ -44,4 +45,8 @@ pub fn gen_printable_string(length: usize) -> String {
 
         String::from_utf8_lossy(&random_bytes).to_string()
     })
+}
+
+pub fn shuffle<T>(values: &mut [T]) {
+    RNG.with(|rng| values.shuffle(&mut *rng.borrow_mut()));
 }

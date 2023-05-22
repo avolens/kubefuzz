@@ -1,6 +1,6 @@
-use super::K8sResourceSpec;
-use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64};
-use rand::prelude::SliceRandom;
+use super::{rand::RNG, K8sResourceSpec};
+use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
+use std::borrow::BorrowMut;
 
 fn gen_string() -> serde_json::Value {
     serde_json::Value::String(gen_printable_string(gen_range(1, 25)))
@@ -55,9 +55,9 @@ pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
             .cloned()
             .collect();
 
-        // TODO: make this use our RNG
         if !optionalprops.is_empty() {
-            optionalprops.shuffle(&mut rand::thread_rng());
+            shuffle(&mut optionalprops);
+
             let num_optional = gen_range(
                 if to_generate.is_empty() { 1 } else { 0 }, // if we have no required props, we need at least one optional
                 optionalprops.len() + 1,
