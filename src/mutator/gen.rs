@@ -33,7 +33,6 @@ fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
 }
 
 pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
-    // TODO: ensure that the types always match!
     if !spec._enum.is_empty() {
         return spec._enum[gen_range(0, spec._enum.len())].clone();
     }
