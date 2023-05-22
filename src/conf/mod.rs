@@ -13,9 +13,10 @@ pub enum ValuesMode {
 #[derive(Debug, Serialize)]
 pub struct FieldConfig {
     pub path: String,
-    pub values: Option<Vec<serde_json::Value>>,
+    pub values: Option<Vec<serde_yaml::Value>>,
     pub values_mode: Option<ValuesMode>,
     pub required: Option<bool>,
+    pub minmax: Option<(usize, usize)>,
 
     function: Option<String>, // reserved for future feature
 }
@@ -27,19 +28,25 @@ pub struct ConstraintConfig {
 }
 
 impl<'de> Deserialize<'de> for FieldConfig {
+    /*
+    since we want the user to be able to supply either a simple
+    string or a more complex object, we need to implement a custom
+    deserializer.
+    */
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let json_value = Value::deserialize(deserializer)?;
+        let yaml_val = Value::deserialize(deserializer)?;
 
-        match json_value {
+        match yaml_val {
             Value::String(s) => Ok(FieldConfig {
                 path: s,
                 values: None,
                 values_mode: None,
                 required: None,
                 function: None,
+                minmax: None,
             }),
             Value::Object(map) => {
                 let path = match map.get("path") {
@@ -56,6 +63,8 @@ impl<'de> Deserialize<'de> for FieldConfig {
                     .map_err(D::Error::custom)?;
                 let function = from_value(map.get("function").cloned().unwrap_or(Value::Null))
                     .map_err(D::Error::custom)?;
+                let minmax = from_value(map.get("minmax").cloned().unwrap_or(Value::Null))
+                    .map_err(D::Error::custom)?;
 
                 Ok(FieldConfig {
                     path,
@@ -63,6 +72,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
                     values_mode,
                     required,
                     function,
+                    minmax,
                 })
             }
             _ => Err(D::Error::invalid_type(

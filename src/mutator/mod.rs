@@ -253,8 +253,9 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
         std::fs::read_to_string(constraintfile_path).expect("Unable to read constraint file");
 
     let constraint_config: ConstraintConfig =
-        serde_json::from_str(&rawcontent).expect("Unable to parse constraint file");
+        serde_yaml::from_str(&rawcontent).expect("Unable to parse constraint file");
 
+    println!("constraint config: {:#?}", constraint_config);
     let mut spec = loadspec(specname);
 
     // first collect all allowed jsonpath into simple list

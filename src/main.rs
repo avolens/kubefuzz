@@ -14,9 +14,9 @@ mod mutator;
 fn main() {
     log::initlog();
     mutator::rand::seedrand();
-    let slim_constraint = load_constrained_spec("constraint.json", "pod");
+    let slim_constraint = load_constrained_spec("constraint.yaml", "pod");
 
     let resc = gen_resource(&slim_constraint);
 
-    println!("{}", serde_json::to_string_pretty(&resc).unwrap());
+    //println!("{}", serde_json::to_string_pretty(&resc).unwrap());
 }

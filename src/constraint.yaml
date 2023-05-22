@@ -1,0 +1,8 @@
+resource_name: pod
+fields:
+- path: "$.spec.containers.securityContext.privileged"
+  values:
+  - true
+  required: true
+- path: "$.spec.containers"
+  minmax: [0,20] 
