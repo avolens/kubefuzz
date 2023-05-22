@@ -13,6 +13,8 @@ of the k8s API. It has more fields like description and
 multiple x- fields thtat we dont bother reading into
 memory
 */
+
+// TOOD: make it possible to supply $. as path
 #[derive(Serialize, Deserialize, Debug)]
 pub struct K8sResourceSpec {
     #[serde(rename = "type")]
@@ -31,6 +33,31 @@ pub struct K8sResourceSpec {
 
     #[serde(rename = "additionalProperties")]
     pub additional_properties: Option<Box<K8sResourceSpec>>,
+}
+
+pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> Vec<String> {
+    let ppath_len = ppath.matches(".").count();
+    let mut required_subs: Vec<String> = vec![];
+
+    for fcnfg in &constraintconfig.fields {
+        let fcnfg_parts = fcnfg.path.split('.').collect::<Vec<&str>>();
+        let fcnfg_len = fcnfg_parts.len();
+
+        debug!("checking if {} is a subpath of {}", fcnfg.path, ppath);
+        if fcnfg_len <= ppath_len {
+            continue;
+        }
+
+        if fcnfg.path.starts_with(&ppath) {
+            debug!("{} is a subpath of {}", fcnfg.path, ppath);
+            if fcnfg.required.is_some() {
+                if fcnfg.required.unwrap() {
+                    required_subs.push(fcnfg_parts[ppath_len].to_string());
+                }
+            }
+        }
+    }
+    return required_subs;
 }
 
 pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
@@ -120,7 +147,7 @@ fn constrain_spec(
                             match &fcnfg.values_mode {
                                 Some(mode) => {
                                     if *mode == ValuesMode::Override {
-                                        debug!("overriding enum for field '{}', original content : {:?}", curpath,subspec._enum);
+                                        warn!("overriding enum for field '{}', original content : {:?}", curpath,subspec._enum);
                                         subspec._enum = values.clone();
                                     } else {
                                         subspec._enum.extend(values.clone());
@@ -136,7 +163,6 @@ fn constrain_spec(
                 }
 
                 // at last, lets update the required field
-                // TODO: make sure we propagate required upwards!
                 match &fcnfg.required {
                     Some(required) => {
                         if *required {
@@ -158,6 +184,16 @@ fn constrain_spec(
         debug!("checking partial match for field '{}'", curpath);
 
         if path_allowed(&curpath, &constraintconfig) {
+            // if this value is not required itsef, we may have to set it to required
+            // additionally because its children may be required
+            if !spec.required.contains(key) {
+                for w in get_required_subs(&curpath, &constraintconfig) {
+                    if !spec.required.contains(&w) {
+                        spec.required.push(w);
+                    }
+                }
+            }
+
             recurse_properties.push((key.clone(), curpath));
         } else {
             remove_properties.push(key.clone());

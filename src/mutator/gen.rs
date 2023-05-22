@@ -1,6 +1,7 @@
 use super::K8sResourceSpec;
 use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64};
 use rand::prelude::SliceRandom;
+// TODO: fix bug where we always generate single property
 
 fn gen_string() -> serde_json::Value {
     serde_json::Value::String(gen_printable_string(gen_range(1, 25)))
