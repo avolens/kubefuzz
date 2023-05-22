@@ -162,6 +162,20 @@ fn constrain_spec(
                     }
                     None => {}
                 }
+                // also set min and max values for arrays
+
+                match &fcnfg.minmax {
+                    Some(minmax) => {
+                        println!("setting minmax for field '{}'", spec._type);
+                        if spec.properties[key]._type == "array" {
+                            error_exit!(
+                                "minmax is only allowed for arrays, but found for field '{}'",
+                                curpath
+                            );
+                        }
+                    }
+                    None => {}
+                }
 
                 // at last, lets update the required field
                 match &fcnfg.required {
