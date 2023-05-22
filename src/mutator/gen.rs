@@ -1,7 +1,6 @@
 use super::K8sResourceSpec;
 use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64};
 use rand::prelude::SliceRandom;
-// TODO: fix bug where we always generate single property
 
 fn gen_string() -> serde_json::Value {
     serde_json::Value::String(gen_printable_string(gen_range(1, 25)))
@@ -57,11 +56,12 @@ pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
             .collect();
 
         // TODO: make this use our RNG
-
         if !optionalprops.is_empty() {
             optionalprops.shuffle(&mut rand::thread_rng());
-
-            let num_optional = gen_range(1, optionalprops.len() + 1);
+            let num_optional = gen_range(
+                if to_generate.is_empty() { 1 } else { 0 }, // if we have no required props, we need at least one optional
+                optionalprops.len() + 1,
+            );
 
             for opt in optionalprops[0..num_optional].to_vec() {
                 to_generate.push(opt);
