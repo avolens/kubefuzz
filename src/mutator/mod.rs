@@ -2,6 +2,7 @@ use crate::conf::ValuesMode;
 use crate::{conf::ConstraintConfig, error_exit};
 use core::iter::Map;
 use serde::{Deserialize, Serialize};
+use serde_yaml;
 use std::{collections::HashMap, fs::File};
 use std::{fs, path::PathBuf};
 
@@ -249,13 +250,29 @@ fn constrain_spec(
 
 pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sResourceSpec {
     info!("Reading constraint file: {:?}", constraintfile_path);
+
+    if !constraintfile_path.contains(".") {
+        error_exit!(
+            "invalid constraint file path '{}'. No extension",
+            constraintfile_path
+        );
+    }
+
     let rawcontent =
         std::fs::read_to_string(constraintfile_path).expect("Unable to read constraint file");
 
-    let constraint_config: ConstraintConfig =
-        serde_yaml::from_str(&rawcontent).expect("Unable to parse constraint file");
+    let constraint_config: ConstraintConfig = match constraintfile_path.split(".").last().unwrap() {
+        "yaml" => serde_yaml::from_str(&rawcontent).expect("Unable to parse constraint file"),
+        "json" => serde_json::from_str(&rawcontent).expect("Unable to parse constraint file"),
 
-    println!("constraint config: {:#?}", constraint_config);
+        &_ => {
+            error_exit!(
+                "invalid constraint file path '{}'. Supported config languages: yaml, json",
+                constraintfile_path
+            );
+        }
+    };
+
     let mut spec = loadspec(specname);
 
     // first collect all allowed jsonpath into simple list

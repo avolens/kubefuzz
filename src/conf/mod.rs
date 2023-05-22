@@ -1,7 +1,6 @@
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{from_value, Value};
-
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ValuesMode {
     #[serde(rename = "override")]
@@ -13,7 +12,7 @@ pub enum ValuesMode {
 #[derive(Debug, Serialize)]
 pub struct FieldConfig {
     pub path: String,
-    pub values: Option<Vec<serde_yaml::Value>>,
+    pub values: Option<Vec<serde_json::Value>>,
     pub values_mode: Option<ValuesMode>,
     pub required: Option<bool>,
     pub minmax: Option<(usize, usize)>,

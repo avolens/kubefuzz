@@ -18,5 +18,5 @@ fn main() {
 
     let resc = gen_resource(&slim_constraint);
 
-    //println!("{}", serde_json::to_string_pretty(&resc).unwrap());
+    println!("{}", serde_json::to_string_pretty(&resc).unwrap());
 }
