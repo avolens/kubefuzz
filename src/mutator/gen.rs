@@ -1,6 +1,5 @@
-use super::{rand::RNG, K8sResourceSpec};
+use super::K8sResourceSpec;
 use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
-use std::borrow::BorrowMut;
 
 fn gen_string() -> serde_json::Value {
     serde_json::Value::String(gen_printable_string(gen_range(1, 25)))

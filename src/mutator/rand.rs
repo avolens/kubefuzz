@@ -16,13 +16,6 @@ pub fn seed(seed: u64) {
     RNG.with(|rng| *rng.borrow_mut() = XorShiftRng::seed_from_u64(seed));
 }
 
-pub fn gen<T>() -> T
-where
-    rand::distributions::Standard: rand::distributions::Distribution<T>,
-{
-    RNG.with(|rng| rng.borrow_mut().gen())
-}
-
 pub fn gen_range<T>(low: T, high: T) -> T
 where
     T: rand::distributions::uniform::SampleUniform + std::cmp::PartialOrd + Copy,

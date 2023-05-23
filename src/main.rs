@@ -6,7 +6,7 @@ extern crate pretty_env_logger;
 extern crate log as rust_log;
 
 use mutator::gen::gen_resource;
-use mutator::{load_constrained_spec, loadspec};
+use mutator::load_constrained_spec;
 mod conf;
 mod log;
 mod mutator;

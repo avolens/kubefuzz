@@ -1,10 +1,9 @@
 use crate::conf::ValuesMode;
 use crate::{conf::ConstraintConfig, error_exit};
-use core::iter::Map;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
+use std::collections::HashMap;
 use std::collections::HashSet;
-use std::{collections::HashMap, fs::File};
 use std::{fs, path::PathBuf};
 
 pub mod gen;
@@ -147,7 +146,7 @@ fn constrain_spec(
         spec.items.as_mut().unwrap().properties.iter_mut()
     };
 
-    for (key, subspec) in toiter {
+    for (key, _subspec) in toiter {
         let subpath = format!("{}.{}", parentpath, key);
 
         if path_allowed(&subpath, &constraintconfig) {
