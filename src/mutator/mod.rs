@@ -30,6 +30,8 @@ pub struct K8sResourceSpec {
     #[serde(default)]
     pub required: Vec<String>,
 
+    pub minmax: Option<(usize, usize)>,
+
     pub items: Option<Box<K8sResourceSpec>>,
 
     #[serde(rename = "additionalProperties")]
@@ -166,12 +168,13 @@ fn constrain_spec(
 
                 match &fcnfg.minmax {
                     Some(minmax) => {
-                        println!("setting minmax for field '{}'", spec._type);
-                        if spec.properties[key]._type == "array" {
+                        if subspec._type != "array" {
                             error_exit!(
                                 "minmax is only allowed for arrays, but found for field '{}'",
                                 curpath
                             );
+                        } else {
+                            subspec.minmax = Some(minmax.clone());
                         }
                     }
                     None => {}

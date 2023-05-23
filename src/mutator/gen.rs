@@ -16,8 +16,12 @@ fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
     let mut arr = serde_json::Value::Array(vec![]);
     debug!("generating array");
 
-    // TODO: make min max configurable
-    for _ in 0..gen_range(1, 20) {
+    let (min, max) = match spec.minmax {
+        Some(minmax) => minmax,
+        None => (1, 20),
+    };
+
+    for _ in min..gen_range(min, max + 1) + 1 {
         arr.as_array_mut()
             .unwrap()
             .push(match items._type.as_str() {
