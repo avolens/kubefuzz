@@ -3,6 +3,7 @@ use crate::{conf::ConstraintConfig, error_exit};
 use core::iter::Map;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
+use std::collections::HashSet;
 use std::{collections::HashMap, fs::File};
 use std::{fs, path::PathBuf};
 
@@ -38,13 +39,17 @@ pub struct K8sResourceSpec {
     pub additional_properties: Option<Box<K8sResourceSpec>>,
 }
 
-pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> Vec<String> {
-    let ppath_len = ppath.matches(".").count();
-    let mut required_subs: Vec<String> = vec![];
+fn jsonpath_len(path: &str) -> usize {
+    return path.split('.').filter(|x| !x.is_empty()).count();
+}
+
+pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> HashSet<String> {
+    let ppath_len = jsonpath_len(ppath);
+    let mut required_subs: HashSet<String> = HashSet::new();
 
     for fcnfg in &constraintconfig.fields {
         let fcnfg_parts = fcnfg.path.split('.').collect::<Vec<&str>>();
-        let fcnfg_len = fcnfg_parts.len();
+        let fcnfg_len = jsonpath_len(&fcnfg.path);
 
         debug!("checking if {} is a subpath of {}", fcnfg.path, ppath);
         if fcnfg_len <= ppath_len {
@@ -55,7 +60,7 @@ pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> Ve
             debug!("{} is a subpath of {}", fcnfg.path, ppath);
             if fcnfg.required.is_some() {
                 if fcnfg.required.unwrap() {
-                    required_subs.push(fcnfg_parts[ppath_len].to_string());
+                    required_subs.insert(fcnfg_parts[ppath_len].to_string());
                 }
             }
         }
@@ -96,28 +101,45 @@ pub fn loadspec(specname: &str) -> K8sResourceSpec {
 fn constrain_spec(
     constraintconfig: &ConstraintConfig,
     spec: &mut K8sResourceSpec,
-    jsonpath: &String,
+    parentpath: &String,
     paths_covered: &mut Vec<String>,
 ) {
-    debug!("filtering k8s resource spec. currently at {}", jsonpath);
+    debug!("filtering k8s resource spec. currently at {}", parentpath);
 
     /*
     This function slims down a given spec so it only contains
     the fields we care about during mutation. Further, it adds
-    user supplied information like addiotnal enums and overriden
+    user supplied information like additional enums and overriden
     optional values
     */
 
+    // add to this paths required values all children that are required
+    for req_child in get_required_subs(&parentpath, &constraintconfig) {
+        debug!(
+            "adding '{}' to required values of {}",
+            req_child, parentpath
+        );
+        if !spec.required.contains(&req_child) {
+            if spec._type == "array" {
+                spec.items.as_mut().unwrap().required.push(req_child);
+            } else {
+                spec.required.push(req_child);
+            }
+        }
+    }
     // if this a leaf node (terminal property), we can stop here
     if spec.properties.is_empty() && spec._type != "array" {
+        if !paths_covered.contains(parentpath) {
+            paths_covered.push(parentpath.clone());
+        }
         return;
     }
 
-    // now look at all possible properties
-
+    // remove or recurse into subproperties depending on constraint
     let mut remove_properties = vec![];
     let mut recurse_properties = vec![];
 
+    // if we have an array, we need to check the items property
     let toiter = if spec._type != "array" {
         spec.properties.iter_mut()
     } else {
@@ -126,96 +148,68 @@ fn constrain_spec(
     };
 
     for (key, subspec) in toiter {
-        let curpath = format!("{}.{}", jsonpath, key);
-        /*
-        if the current path is in the allowlist, we can
-        apply the constraint by adding enums and modifying
-        the required field
-        */
+        let subpath = format!("{}.{}", parentpath, key);
 
-        // modify enums, watch out if enums are already set
-        match constraintconfig
-            .fields
-            .iter()
-            .find(|fcnfg| fcnfg.path == curpath)
-        {
-            Some(fcnfg) => {
-                paths_covered.push(curpath.clone());
-
-                match &fcnfg.values {
-                    Some(values) => {
-                        if subspec._enum.is_empty() {
-                            subspec._enum = values.clone();
-                        } else {
-                            match &fcnfg.values_mode {
-                                Some(mode) => {
-                                    if *mode == ValuesMode::Override {
-                                        warn!("overriding enum for field '{}', original content : {:?}", curpath,subspec._enum);
-                                        subspec._enum = values.clone();
-                                    } else {
-                                        subspec._enum.extend(values.clone());
-                                    }
-                                }
-                                None => {
-                                    error_exit!("missing values_mode for field '{}' since enum is not empty : {:?}", curpath,subspec._enum);
-                                }
-                            }
-                        }
-                    }
-                    None => {}
-                }
-                // also set min and max values for arrays
-
-                match &fcnfg.minmax {
-                    Some(minmax) => {
-                        if subspec._type != "array" {
-                            error_exit!(
-                                "minmax is only allowed for arrays, but found for field '{}'",
-                                curpath
-                            );
-                        } else {
-                            subspec.minmax = Some(minmax.clone());
-                        }
-                    }
-                    None => {}
-                }
-
-                // at last, lets update the required field
-                match &fcnfg.required {
-                    Some(required) => {
-                        if *required {
-                            if !spec.required.contains(key) {
-                                spec.required.push(key.clone());
-                            }
-                        } else {
-                            spec.required.retain(|x| x != key);
-                        }
-                    }
-                    None => {}
-                }
-            }
-            None => {}
-        }
-
-        // If we dont have an exact match, we might have a partial one
-        // in which case we have to go deeper. If not even a partial
-        debug!("checking partial match for field '{}'", curpath);
-
-        if path_allowed(&curpath, &constraintconfig) {
-            // if this value is not required itsef, we may have to set it to required
-            // additionally because its children may be required
-            if !spec.required.contains(key) {
-                for w in get_required_subs(&curpath, &constraintconfig) {
-                    if !spec.required.contains(&w) {
-                        spec.required.push(w);
-                    }
-                }
-            }
-
-            recurse_properties.push((key.clone(), curpath));
+        if path_allowed(&subpath, &constraintconfig) {
+            recurse_properties.push((key.clone(), subpath));
         } else {
             remove_properties.push(key.clone());
         }
+    }
+
+    // now check if the current path is an exact match
+    // in which case we want to update some properties
+    match constraintconfig
+        .fields
+        .iter()
+        .find(|fcnfg| &fcnfg.path == parentpath)
+    {
+        Some(fcnfg) => {
+            paths_covered.push(parentpath.clone());
+
+            // first, update the enum if needed
+            match &fcnfg.values {
+                Some(values) => {
+                    if spec._enum.is_empty() {
+                        spec._enum = values.clone();
+                    } else {
+                        match &fcnfg.values_mode {
+                            Some(mode) => {
+                                if *mode == ValuesMode::Override {
+                                    warn!(
+                                        "overriding enum for field '{}', original content : {:?}",
+                                        parentpath, spec._enum
+                                    );
+                                    spec._enum = values.clone();
+                                } else {
+                                    spec._enum.extend(values.clone());
+                                }
+                            }
+                            None => {
+                                error_exit!("missing values_mode for field '{}' since enum is not empty : {:?}", parentpath,spec._enum);
+                            }
+                        }
+                    }
+                }
+                None => {}
+            }
+
+            // also set min and max values for arrays
+            match &fcnfg.minmax {
+                Some(minmax) => {
+                    if spec._type != "array" {
+                        error_exit!(
+                            "minmax is only allowed for arrays, but found for field '{}'",
+                            parentpath
+                        );
+                    } else {
+                        spec.minmax = Some(minmax.clone());
+                    }
+                }
+                None => {}
+            }
+        }
+        None => {}
     }
 
     // remove all properties that are not on the allowlist
@@ -230,14 +224,14 @@ fn constrain_spec(
         if req_vals.contains(k) {
             warn!(
                 "removing a required field '{}.{}'. K8s will API probably reject this",
-                jsonpath, &k
+                parentpath, &k
             );
         }
     }
 
     // now remove
     for k in &remove_properties {
-        debug!("removing property {}", format!("{}.{}", jsonpath, &k));
+        debug!("removing property {}", format!("{}.{}", parentpath, &k));
         // if we are dealing with an array, we have to delete from items.properties
         if spec._type == "array" {
             spec.items.as_mut().unwrap().properties.remove(k).unwrap();

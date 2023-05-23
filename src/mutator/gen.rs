@@ -21,7 +21,7 @@ fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
         None => (1, 20),
     };
 
-    for _ in min..gen_range(min, max + 1) + 1 {
+    for _ in 0..gen_range(min, max + 1) + 1 {
         arr.as_array_mut()
             .unwrap()
             .push(match items._type.as_str() {
