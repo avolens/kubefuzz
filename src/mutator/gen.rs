@@ -1,15 +1,39 @@
 use super::K8sResourceSpec;
 use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
 
-fn gen_string() -> serde_json::Value {
-    serde_json::Value::String(gen_printable_string(gen_range(1, 25)))
+fn gen_ip() -> serde_json::Value {
+    let mut ip = String::new();
+    for _ in 0..4 {
+        ip.push_str(&gen_range(0, 256).to_string());
+        ip.push('.');
+    }
+    ip.pop();
+    return serde_json::Value::String(ip);
+}
+
+fn gen_string(propname: &str) -> serde_json::Value {
+    let lower = propname.to_lowercase();
+    match lower {
+        _ if lower.contains("port") => serde_json::Value::String(gen_range(0, 65535).to_string()),
+        _ if lower.contains("ip") => gen_ip(),
+        _ if lower == "host" => gen_ip(),
+        _ => serde_json::Value::String(gen_printable_string(gen_range(1, 25))),
+    }
 }
 
 fn gen_bool() -> serde_json::Value {
     serde_json::Value::Bool(gen_range(0, 2) == 1)
 }
 
-fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
+fn gen_int(propname: &str) -> serde_json::Value {
+    let lower = propname.to_lowercase();
+    match lower {
+        _ if lower.contains("port") => gen_range(0, 65535).into(),
+        _ => serde_json::Value::Number(rand_i64().into()),
+    }
+}
+
+fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
     assert!(spec.items.is_some());
     let items = spec.items.as_ref().unwrap();
     let mut arr = serde_json::Value::Array(vec![]);
@@ -24,10 +48,10 @@ fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
         arr.as_array_mut()
             .unwrap()
             .push(match items._type.as_str() {
-                "string" => gen_string(),
+                "string" => gen_string(propname),
                 "boolean" => gen_bool(),
-                "integer" => serde_json::Value::Number(rand_i64().into()),
-                "object" => gen_property(&items),
+                "integer" => gen_int(propname),
+                "object" => gen_property(&items, propname),
                 "array" => panic!("nested arrays not supported"),
                 &_ => panic!("schema type not known"),
             });
@@ -35,7 +59,7 @@ fn gen_array(spec: &K8sResourceSpec) -> serde_json::Value {
     return arr;
 }
 
-pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
+pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
     if !spec._enum.is_empty() {
         return spec._enum[gen_range(0, spec._enum.len())].clone();
     }
@@ -72,22 +96,22 @@ pub fn gen_property(spec: &K8sResourceSpec) -> serde_json::Value {
 
         for prop in to_generate {
             debug!("generating object {:?}", prop);
-            ret[prop.as_str()] = gen_property(&spec.properties[prop.as_str()]);
+            ret[prop.as_str()] = gen_property(&spec.properties[prop.as_str()], &prop);
         }
         return ret;
     }
 
     // else, we have a primitive type
     match spec._type.as_str() {
-        "string" => return gen_string(),
+        "string" => return gen_string(propname),
         "boolean" => return gen_bool(),
-        "array" => return gen_array(spec),
-        "integer" => return serde_json::Value::Number(rand_i64().into()),
+        "array" => return gen_array(spec, propname),
+        "integer" => return gen_int(propname),
 
         &_ => panic!("type not covered"),
     }
 }
 
 pub fn gen_resource(spec: &K8sResourceSpec) -> serde_json::Value {
-    return gen_property(spec);
+    return gen_property(spec, "$");
 }
