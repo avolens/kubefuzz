@@ -103,7 +103,10 @@ fn constrain_spec(
     parentpath: &String,
     paths_covered: &mut Vec<String>,
 ) {
-    debug!("filtering k8s resource spec. currently at {}", parentpath);
+    debug!(
+        "constraining k8s resource spec. currently at {}",
+        parentpath
+    );
 
     /*
     This function slims down a given spec so it only contains
@@ -125,13 +128,6 @@ fn constrain_spec(
                 spec.required.push(req_child);
             }
         }
-    }
-    // if this a leaf node (terminal property), we can stop here
-    if spec.properties.is_empty() && spec._type != "array" {
-        if !paths_covered.contains(parentpath) {
-            paths_covered.push(parentpath.clone());
-        }
-        return;
     }
 
     // remove or recurse into subproperties depending on constraint
@@ -209,6 +205,11 @@ fn constrain_spec(
             }
         }
         None => {}
+    }
+
+    // if this a leaf node (terminal property), we can stop here
+    if spec.properties.is_empty() && spec._type != "array" {
+        return;
     }
 
     // remove all properties that are not on the allowlist
