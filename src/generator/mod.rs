@@ -15,7 +15,6 @@ multiple x- fields thtat we dont bother reading into
 memory
 */
 
-// TOOD: make it possible to supply $. as path
 #[derive(Serialize, Deserialize, Debug)]
 pub struct K8sResourceSpec {
     #[serde(rename = "type")]
