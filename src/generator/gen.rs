@@ -1,5 +1,5 @@
 use super::K8sResourceSpec;
-use crate::mutator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
+use crate::generator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
 
 fn gen_ip() -> serde_json::Value {
     let mut ip = String::new();
