@@ -1,5 +1,6 @@
 use crate::conf::ValuesMode;
 use crate::{conf::ConstraintConfig, error_exit};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::collections::HashMap;
@@ -14,6 +15,9 @@ of the k8s API. It has more fields like description and
 multiple x- fields thtat we dont bother reading into
 memory
 */
+
+// TODO: look into property removing clash
+// -> e.g $. supplied but we want to remove smth
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct K8sResourceSpec {
@@ -71,6 +75,13 @@ pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
 
     for each in &constraintconfig.fields {
         let vectorized_allow = each.path.split(".").collect::<Vec<&str>>();
+
+        if each.regex {
+            let re = Regex::new(&each.path).expect("invalid regex");
+            if re.is_match(path) {
+                return true;
+            }
+        }
 
         for (i, each) in vectorized_allow.iter().enumerate() {
             if each != &vectorized_path[i] {
@@ -153,57 +164,66 @@ fn constrain_spec(
 
     // now check if the current path is an exact match
     // in which case we want to update some properties
-    match constraintconfig
+
+    // iterate over all configs that target this path
+    for fcnfg in constraintconfig
         .fields
         .iter()
-        .find(|fcnfg| &fcnfg.path == parentpath)
+        .filter(|fcnfg| match fcnfg.regex {
+            true => {
+                let re = Regex::new(&fcnfg.path).expect("invalid regex");
+                re.is_match(&parentpath)
+            }
+            false => &fcnfg.path == parentpath,
+        })
     {
-        Some(fcnfg) => {
-            paths_covered.push(parentpath.clone());
+        paths_covered.push(fcnfg.path.clone());
 
-            // first, update the enum if needed
-            match &fcnfg.values {
-                Some(values) => {
-                    if spec._enum.is_empty() {
-                        spec._enum = values.clone();
-                    } else {
-                        match &fcnfg.values_mode {
-                            Some(mode) => {
-                                if *mode == ValuesMode::Override {
-                                    warn!(
-                                        "overriding enum for field '{}', original content : {:?}",
-                                        parentpath, spec._enum
-                                    );
-                                    spec._enum = values.clone();
-                                } else {
-                                    spec._enum.extend(values.clone());
-                                }
+        // first, update the enum if needed
+        match &fcnfg.values {
+            Some(values) => {
+                if spec._enum.is_empty() {
+                    spec._enum = values.clone();
+                } else {
+                    match &fcnfg.values_mode {
+                        Some(mode) => {
+                            if *mode == ValuesMode::Override {
+                                warn!(
+                                    "overriding enum for field '{}', original content : {:?}",
+                                    parentpath, spec._enum
+                                );
+                                spec._enum = values.clone();
+                            } else {
+                                spec._enum.extend(values.clone());
                             }
-                            None => {
-                                error_exit!("missing values_mode for field '{}' since enum is not empty : {:?}", parentpath,spec._enum);
-                            }
+                        }
+                        None => {
+                            error_exit!(
+                                "missing values_mode for field '{}' since enum is not empty : {:?}",
+                                parentpath,
+                                spec._enum
+                            );
                         }
                     }
                 }
-                None => {}
             }
-
-            // also set min and max values for arrays
-            match &fcnfg.minmax {
-                Some(minmax) => {
-                    if spec._type != "array" {
-                        error_exit!(
-                            "minmax is only allowed for arrays, but found for field '{}'",
-                            parentpath
-                        );
-                    } else {
-                        spec.minmax = Some(minmax.clone());
-                    }
-                }
-                None => {}
-            }
+            None => {}
         }
-        None => {}
+
+        // also set min and max values for arrays
+        match &fcnfg.minmax {
+            Some(minmax) => {
+                if spec._type != "array" {
+                    error_exit!(
+                        "minmax is only allowed for arrays, but found for field '{}'",
+                        parentpath
+                    );
+                } else {
+                    spec.minmax = Some(minmax.clone());
+                }
+            }
+            None => {}
+        }
     }
 
     // if this a leaf node (terminal property), we can stop here

@@ -17,6 +17,9 @@ pub struct FieldConfig {
     pub required: Option<bool>,
     pub minmax: Option<(usize, usize)>,
 
+    #[serde(default)]
+    pub regex: bool,
+
     function: Option<String>, // reserved for future feature
 }
 
@@ -46,6 +49,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
                 required: None,
                 function: None,
                 minmax: None,
+                regex: false,
             }),
             Value::Object(map) => {
                 let path = match map.get("path") {
@@ -64,6 +68,8 @@ impl<'de> Deserialize<'de> for FieldConfig {
                     .map_err(D::Error::custom)?;
                 let minmax = from_value(map.get("minmax").cloned().unwrap_or(Value::Null))
                     .map_err(D::Error::custom)?;
+                let regex = from_value(map.get("regex").cloned().unwrap_or(Value::Bool(false)))
+                    .map_err(D::Error::custom)?;
 
                 Ok(FieldConfig {
                     path,
@@ -72,6 +78,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
                     required,
                     function,
                     minmax,
+                    regex,
                 })
             }
             _ => Err(D::Error::invalid_type(
