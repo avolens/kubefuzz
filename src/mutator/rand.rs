@@ -27,13 +27,18 @@ pub fn rand_i64() -> i64 {
     RNG.with(|rng| rng.borrow_mut().gen_range(0..i64::MAX))
 }
 
-pub fn gen_printable_string(length: usize) -> String {
+pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
     const PRINTABLE_CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[{]};:'\",<.>/?";
+
+    let cs = match charset {
+        Some(cs) => cs,
+        None => PRINTABLE_CHARS,
+    };
 
     RNG.with(|rng| {
         let mut rng = rng.borrow_mut();
         let random_bytes: Vec<u8> = (0..length)
-            .map(|_| PRINTABLE_CHARS[rng.gen_range(0..PRINTABLE_CHARS.len())] as u8)
+            .map(|_| cs[rng.gen_range(0..cs.len())] as u8)
             .collect();
 
         String::from_utf8_lossy(&random_bytes).to_string()

@@ -14,10 +14,17 @@ fn gen_ip() -> serde_json::Value {
 fn gen_string(propname: &str) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
-        _ if lower.contains("port") => serde_json::Value::String(gen_range(0, 65535).to_string()),
+        _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),
         _ if lower.contains("ip") => gen_ip(),
         _ if lower == "host" => gen_ip(),
-        _ => serde_json::Value::String(gen_printable_string(gen_range(1, 25))),
+        _ if lower.contains("group") || lower == "runasuser" || lower.contains("username") => {
+            gen_printable_string(
+                gen_range(1, 25),
+                Some("_-abcdefghijklmnopqrstuvwxyz".as_bytes()), // losely based on unix usernme naming rules
+            )
+            .into()
+        }
+        _ => gen_printable_string(gen_range(1, 25), None).into(),
     }
 }
 
@@ -29,6 +36,9 @@ fn gen_int(propname: &str) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
         _ if lower.contains("port") => gen_range(0, 65535).into(),
+        _ if lower.contains("group") || lower == "runasuser" || lower.contains("username") => {
+            gen_range(0, 2147483647).into()
+        }
         _ => serde_json::Value::Number(rand_i64().into()),
     }
 }
