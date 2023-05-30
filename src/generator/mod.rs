@@ -45,6 +45,14 @@ fn jsonpath_len(path: &str) -> usize {
     return path.split('.').filter(|x| !x.is_empty()).count();
 }
 
+fn normalize_path(path: &str) -> String {
+    return path
+        .split(".")
+        .filter(|x| !x.is_empty())
+        .collect::<Vec<&str>>()
+        .join(".");
+}
+
 pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> HashSet<String> {
     let ppath_len = jsonpath_len(ppath);
     let mut required_subs: HashSet<String> = HashSet::new();
@@ -291,17 +299,22 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
     let rawcontent =
         std::fs::read_to_string(constraintfile_path).expect("Unable to read constraint file");
 
-    let constraint_config: ConstraintConfig = match constraintfile_path.split(".").last().unwrap() {
-        "yaml" => serde_yaml::from_str(&rawcontent).expect("Unable to parse constraint file"),
-        "json" => serde_json::from_str(&rawcontent).expect("Unable to parse constraint file"),
+    let mut constraint_config: ConstraintConfig =
+        match constraintfile_path.split(".").last().unwrap() {
+            "yaml" => serde_yaml::from_str(&rawcontent).expect("Unable to parse constraint file"),
+            "json" => serde_json::from_str(&rawcontent).expect("Unable to parse constraint file"),
 
-        &_ => {
-            error_exit!(
-                "invalid constraint file path '{}'. Supported config languages: yaml, json",
-                constraintfile_path
-            );
-        }
-    };
+            &_ => {
+                error_exit!(
+                    "invalid constraint file path '{}'. Supported config languages: yaml, json",
+                    constraintfile_path
+                );
+            }
+        };
+
+    for fcnfg in &mut constraint_config.fields {
+        fcnfg.path = normalize_path(&fcnfg.path);
+    }
 
     let mut spec = loadspec(specname);
 
