@@ -313,7 +313,9 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
         };
 
     for fcnfg in &mut constraint_config.fields {
-        fcnfg.path = normalize_path(&fcnfg.path);
+        if !fcnfg.regex {
+            fcnfg.path = normalize_path(&fcnfg.path);
+        }
     }
 
     let mut spec = loadspec(specname);
