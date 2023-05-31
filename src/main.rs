@@ -7,16 +7,21 @@ extern crate log as rust_log;
 
 use generator::gen::gen_resource;
 use generator::load_constrained_spec;
+
 mod conf;
+mod executor;
 mod generator;
 mod log;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     log::initlog();
     generator::rand::seedrand();
     let slim_constraint = load_constrained_spec("constraint.yaml", "pod");
 
     let resc = gen_resource(&slim_constraint);
 
-    println!("{}", serde_json::to_string_pretty(&resc).unwrap());
+    //println!("{}", serde_json::to_string_pretty(&resc).unwrap());
+
+    executor::get_client("configfile");
 }
