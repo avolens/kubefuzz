@@ -27,6 +27,7 @@ pub struct FieldConfig {
 pub struct ConstraintConfig {
     pub resource_name: String,
     pub fields: Vec<FieldConfig>,
+    pub gvk: String,
 }
 
 impl<'de> Deserialize<'de> for FieldConfig {

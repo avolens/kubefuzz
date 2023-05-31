@@ -312,6 +312,20 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
             }
         };
 
+    if constraint_config
+        .gvk
+        .split('.')
+        .filter(|x| !x.is_empty())
+        .count()
+        != 3
+    {
+        error_exit!(
+            "invalid gvk '{}' in constraint file '{}'",
+            constraint_config.gvk,
+            constraintfile_path
+        );
+    }
+
     for fcnfg in &mut constraint_config.fields {
         if !fcnfg.regex {
             fcnfg.path = normalize_path(&fcnfg.path);
