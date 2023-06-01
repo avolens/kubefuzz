@@ -1,6 +1,11 @@
 use super::K8sResourceSpec;
 use crate::generator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
 
+use lazy_static::lazy_static;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static GENERATION_COUNT: AtomicU64 = AtomicU64::new(0);
+
 fn gen_ip() -> serde_json::Value {
     let mut ip = String::new();
     for _ in 0..4 {
@@ -123,5 +128,20 @@ pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value
 }
 
 pub fn gen_resource(spec: &K8sResourceSpec) -> serde_json::Value {
-    return gen_property(spec, "$");
+    let mut resc = gen_property(spec, "$");
+
+    // lastly we make sure that version, kind and name are correctly set
+    // as they are required by the API
+
+    let gvkv = spec.gvk.as_ref().unwrap().split('.').collect::<Vec<&str>>();
+    resc["apiVersion"] = format!("{}/{}", gvkv[0], gvkv[1]).into();
+    resc["kind"] = gvkv[2].into();
+
+    resc["metadata"]["name"] = format!(
+        "kubefuzz-{}",
+        GENERATION_COUNT.fetch_add(1, Ordering::SeqCst)
+    )
+    .into();
+
+    return resc;
 }
