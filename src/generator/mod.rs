@@ -39,6 +39,9 @@ pub struct K8sResourceSpec {
 
     #[serde(rename = "additionalProperties")]
     pub additional_properties: Option<Box<K8sResourceSpec>>,
+
+    // set later at runtime based on constraint config
+    pub gvk: Option<String>,
 }
 
 fn jsonpath_len(path: &str) -> usize {
@@ -286,6 +289,23 @@ fn constrain_spec(
     }
 }
 
+fn verify_gvk(gvk: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let parts: Vec<&str> = gvk.split(".").collect();
+    if parts.len() != 3 {
+        return Err("too few or too many parts in gvk. Expected 3, sperated by '.'".into());
+    }
+
+    if parts[1].is_empty() || parts[2].is_empty() {
+        return Err("version or kind cannot be empty".into());
+    }
+
+    if !parts[2].chars().next().unwrap().is_uppercase() {
+        return Err("kind must start with uppercase letter".into());
+    }
+
+    Ok(())
+}
+
 pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sResourceSpec {
     info!("Reading constraint file: {:?}", constraintfile_path);
 
@@ -312,20 +332,16 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
             }
         };
 
-    if constraint_config
-        .gvk
-        .split('.')
-        .filter(|x| !x.is_empty())
-        .count()
-        != 3
-    {
-        error_exit!(
-            "invalid gvk '{}' in constraint file '{}'",
-            constraint_config.gvk,
-            constraintfile_path
-        );
+    match verify_gvk(&constraint_config.gvk) {
+        Ok(_) => {}
+        Err(e) => {
+            error_exit!(
+                "invalid gvk in constraint file '{}': {}",
+                constraintfile_path,
+                e
+            );
+        }
     }
-
     for fcnfg in &mut constraint_config.fields {
         if !fcnfg.regex {
             fcnfg.path = normalize_path(&fcnfg.path);
@@ -333,6 +349,8 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
     }
 
     let mut spec = loadspec(specname);
+
+    spec.gvk = Some(constraint_config.gvk.clone());
 
     // first collect all allowed jsonpath into simple list
 
