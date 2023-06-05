@@ -1,14 +1,10 @@
 use super::K8sResourceSpec;
-use crate::generator::rand::{
-    gen_printable_string, gen_range, rand_i64, rand_str_regex, rand_u64, shuffle,
-};
+use crate::generator::rand::{gen_printable_string, gen_range, rand_int, rand_str_regex, shuffle};
 
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static GENERATION_COUNT: AtomicU64 = AtomicU64::new(0);
-
-// todo: add intXX to format parsing
 
 fn gen_ip() -> serde_json::Value {
     let mut ip = String::new();
@@ -43,7 +39,7 @@ fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
                     "date-time" => {
                         rand_str_regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z").into()
                     }
-                    "int-or-string" => rand_u64().into(),
+                    "int-or-string" => rand_int::<i64>().into(),
                     &_ => gen_printable_string(gen_range(1, 25), None).into(),
                 }
             } else {
@@ -57,14 +53,23 @@ fn gen_bool() -> serde_json::Value {
     serde_json::Value::Bool(gen_range(0, 2) == 1)
 }
 
-fn gen_int(propname: &str) -> serde_json::Value {
+fn gen_int(propname: &str, format: &Option<String>) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
         _ if lower.contains("port") => gen_range(0, 65535).into(),
         _ if lower.contains("group") || lower == "runasuser" || lower.contains("username") => {
             gen_range(0, 2147483647).into()
         }
-        _ => serde_json::Value::Number(rand_i64().into()),
+        _ => {
+            return match format {
+                Some(fmt) => match fmt.as_str() {
+                    "int32" => serde_json::Value::Number(rand_int::<i32>().into()),
+                    "int64" => serde_json::Value::Number(rand_int::<i64>().into()),
+                    &_ => serde_json::Value::Number(rand_int::<i64>().into()),
+                },
+                None => serde_json::Value::Number(rand_int::<i64>().into()),
+            };
+        }
     }
 }
 
@@ -85,7 +90,7 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
             .push(match items._type.as_str() {
                 "string" => gen_string(propname, &items.format),
                 "boolean" => gen_bool(),
-                "integer" => gen_int(propname),
+                "integer" => gen_int(propname, &items.format),
                 "object" => gen_property(&items, propname),
                 "array" => panic!("nested arrays not supported"),
                 &_ => panic!("schema type not known"),
@@ -161,7 +166,7 @@ pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value
         "string" => return gen_string(propname, &spec.format),
         "boolean" => return gen_bool(),
         "array" => return gen_array(spec, propname),
-        "integer" => return gen_int(propname),
+        "integer" => return gen_int(propname, &spec.format),
 
         &_ => panic!("type not covered"),
     }

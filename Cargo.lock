@@ -563,6 +563,7 @@ dependencies = [
  "kube",
  "lazy_static",
  "log",
+ "num-traits",
  "pretty_env_logger",
  "rand",
  "rand_regex",

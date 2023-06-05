@@ -1,3 +1,5 @@
+use num_traits::Bounded;
+use rand::distributions::uniform::SampleUniform;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::SeedableRng;
@@ -24,12 +26,8 @@ where
     RNG.with(|rng| rng.borrow_mut().gen_range(low..high))
 }
 
-pub fn rand_i64() -> i64 {
-    RNG.with(|rng| rng.borrow_mut().gen_range(0..i64::MAX))
-}
-
-pub fn rand_u64() -> u64 {
-    RNG.with(|rng| rng.borrow_mut().gen_range(0..u64::MAX))
+pub fn rand_int<T: Bounded + SampleUniform + std::cmp::PartialOrd>() -> T {
+    RNG.with(|rng| rng.borrow_mut().gen_range(T::min_value()..T::max_value()))
 }
 
 pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
