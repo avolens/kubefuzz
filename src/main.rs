@@ -28,7 +28,7 @@ async fn main() {
 
     file.write_all(yaml_value.as_bytes()).unwrap();
 
-    let cl = executor::get_client("configfile").await;
+    let cl = executor::get_client(&None).await;
 
     executor::deploy_resource(resc, &slim_constraint.gvk.unwrap(), cl).await;
 }
