@@ -1,5 +1,7 @@
 use super::K8sResourceSpec;
-use crate::generator::rand::{gen_printable_string, gen_range, rand_int, rand_str_regex, shuffle};
+use crate::generator::rand::{
+    gen_printable_string, gen_range, rand_date_time, rand_int, rand_str_regex, shuffle,
+};
 
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -30,15 +32,17 @@ fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
             .into()
         }
         // quantities
-        _ if lower == "cpu" || lower == "memory" => {
+        _ if lower == "cpu"
+            || lower == "memory"
+            || lower == "storage"
+            || lower == "ephemeral-storage" =>
+        {
             rand_str_regex(r"^[0-9]+([KMGTPE]i|[kMGTPE]|e[0-9]+|[m]?|[.][0-9]+)?$").into()
         }
         _ => {
             if format.is_some() {
                 match format.as_ref().unwrap().as_str() {
-                    "date-time" => {
-                        rand_str_regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z").into()
-                    }
+                    "date-time" => rand_date_time().into(),
                     "int-or-string" => rand_int::<i64>().into(),
                     &_ => gen_printable_string(gen_range(1, 25), None).into(),
                 }

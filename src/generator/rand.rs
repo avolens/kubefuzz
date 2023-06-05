@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use num_traits::Bounded;
 use rand::distributions::uniform::SampleUniform;
 use rand::prelude::SliceRandom;
@@ -28,6 +29,21 @@ where
 
 pub fn rand_int<T: Bounded + SampleUniform + std::cmp::PartialOrd>() -> T {
     RNG.with(|rng| rng.borrow_mut().gen_range(T::min_value()..T::max_value()))
+}
+
+// This function generates a date and time between 50 years in the past and 50 years in the future.
+pub fn rand_date_time() -> String {
+    // max 100 years in future
+    let end = Utc::now() + Duration::weeks(100 * 52);
+
+    let random_timestamp = RNG.with(|rng| rng.borrow_mut().gen_range(0..end.timestamp()));
+    // Convert the random timestamp to a DateTime
+    let date_time: DateTime<Utc> = DateTime::from_utc(
+        NaiveDateTime::from_timestamp_opt(random_timestamp, 0).unwrap(),
+        Utc,
+    );
+    // Return the DateTime as a string
+    date_time.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
