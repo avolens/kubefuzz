@@ -3,6 +3,8 @@ use crate::generator::rand::{
     gen_printable_string, gen_range, rand_date_time, rand_int, rand_str_regex, shuffle,
 };
 
+// todo : somehow handle quantaties
+
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -30,14 +32,6 @@ fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
                 Some("_-abcdefghijklmnopqrstuvwxyz".as_bytes()), // losely based on unix usernme naming rules
             )
             .into()
-        }
-        // quantities
-        _ if lower == "cpu"
-            || lower == "memory"
-            || lower == "storage"
-            || lower == "ephemeral-storage" =>
-        {
-            rand_str_regex(r"^[0-9]+([KMGTPE]i|[kMGTPE]|e[0-9]+|[m]?|[.][0-9]+)?$").into()
         }
         _ => {
             if format.is_some() {
