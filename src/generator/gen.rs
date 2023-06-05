@@ -1,10 +1,14 @@
 use super::K8sResourceSpec;
-use crate::generator::rand::{gen_printable_string, gen_range, rand_i64, shuffle};
+use crate::generator::rand::{
+    gen_printable_string, gen_range, rand_i64, rand_str_regex, rand_u64, shuffle,
+};
 
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static GENERATION_COUNT: AtomicU64 = AtomicU64::new(0);
+
+// todo: add intXX to format parsing
 
 fn gen_ip() -> serde_json::Value {
     let mut ip = String::new();
@@ -16,7 +20,8 @@ fn gen_ip() -> serde_json::Value {
     return serde_json::Value::String(ip);
 }
 
-fn gen_string(propname: &str) -> serde_json::Value {
+// todo : add support for date format and get correct quantities to be generated
+fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
         _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),
@@ -29,7 +34,23 @@ fn gen_string(propname: &str) -> serde_json::Value {
             )
             .into()
         }
-        _ => gen_printable_string(gen_range(1, 25), None).into(),
+        // quantities
+        _ if lower == "cpu" || lower == "memory" => {
+            let mut s = gen_range(1, 100).to_string();
+            s.push_str("m");
+            s.into()
+        }
+        _ => {
+            if format.is_some() {
+                match format.as_ref().unwrap().as_str() {
+                    "date-time" => serde_json::Value::String("2020-01-01T00:00:00Z".into()),
+                    "int-or-string" => rand_u64().into(),
+                    &_ => gen_printable_string(gen_range(1, 25), None).into(),
+                }
+            } else {
+                gen_printable_string(gen_range(1, 25), None).into()
+            }
+        }
     }
 }
 
@@ -63,7 +84,7 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
         arr.as_array_mut()
             .unwrap()
             .push(match items._type.as_str() {
-                "string" => gen_string(propname),
+                "string" => gen_string(propname, &items.format),
                 "boolean" => gen_bool(),
                 "integer" => gen_int(propname),
                 "object" => gen_property(&items, propname),
@@ -75,8 +96,28 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
 }
 
 pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
+    // first check values and regex_values
+
+    if !spec._enum.is_empty() && !spec._enum_regex.is_empty() {
+        match gen_range(0, 2) {
+            0 => {
+                return spec._enum[gen_range(0, spec._enum.len())].clone();
+            }
+            1 => {
+                return rand_str_regex(&spec._enum_regex[gen_range(0, spec._enum_regex.len())])
+                    .into();
+            }
+
+            _ => {}
+        }
+    }
+
     if !spec._enum.is_empty() {
         return spec._enum[gen_range(0, spec._enum.len())].clone();
+    }
+
+    if !spec._enum_regex.is_empty() {
+        return rand_str_regex(&spec._enum_regex[gen_range(0, spec._enum_regex.len())]).into();
     }
 
     if spec._type == "object" {
@@ -118,7 +159,7 @@ pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value
 
     // else, we have a primitive type
     match spec._type.as_str() {
-        "string" => return gen_string(propname),
+        "string" => return gen_string(propname, &spec.format),
         "boolean" => return gen_bool(),
         "array" => return gen_array(spec, propname),
         "integer" => return gen_int(propname),

@@ -1,6 +1,7 @@
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::SeedableRng;
+use rand_regex;
 use rand_xorshift::XorShiftRng;
 use std::cell::RefCell;
 
@@ -27,6 +28,10 @@ pub fn rand_i64() -> i64 {
     RNG.with(|rng| rng.borrow_mut().gen_range(0..i64::MAX))
 }
 
+pub fn rand_u64() -> u64 {
+    RNG.with(|rng| rng.borrow_mut().gen_range(0..u64::MAX))
+}
+
 pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
     const PRINTABLE_CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[{]};:'\",<.>/?";
 
@@ -47,4 +52,13 @@ pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
 
 pub fn shuffle<T>(values: &mut [T]) {
     RNG.with(|rng| values.shuffle(&mut *rng.borrow_mut()));
+}
+
+pub fn rand_str_regex(regex: &str) -> String {
+    RNG.with(|rng| {
+        let gen = rand_regex::Regex::compile(regex, 25)
+            .expect(format!("could not compile regex '{}'", &regex).as_str());
+
+        rng.borrow_mut().sample(gen)
+    })
 }

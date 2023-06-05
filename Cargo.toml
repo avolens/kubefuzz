@@ -6,10 +6,12 @@ edition = "2021"
 [dependencies]
 jsonpath_lib = "0.3.0"
 k8s-openapi = { version = "0.18.0", features = ["v1_26"] }
-kube = "0.82.2"
+kube = {version = "0.82.2", features = ["client"]}
+lazy_static = "1.4.0"
 log = "0.4.0"
 pretty_env_logger = "0.4.0"
 rand = "0.8.5"
+rand_regex = "0.15.1"
 rand_xorshift = "0.3.0"
 regex = "1.8.2"
 serde = { version = "1.0", features = ["derive"] }

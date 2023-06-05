@@ -1,6 +1,9 @@
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{from_value, Value};
+
+// todo: add type restriction to regex paths
+
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ValuesMode {
     #[serde(rename = "override")]
@@ -13,6 +16,7 @@ pub enum ValuesMode {
 pub struct FieldConfig {
     pub path: String,
     pub values: Option<Vec<serde_json::Value>>,
+    pub regex_values: Option<Vec<String>>,
     pub values_mode: Option<ValuesMode>,
     pub required: Option<bool>,
     pub minmax: Option<(usize, usize)>,
@@ -46,6 +50,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
             Value::String(s) => Ok(FieldConfig {
                 path: s,
                 values: None,
+                regex_values: None,
                 values_mode: None,
                 required: None,
                 function: None,
@@ -60,6 +65,9 @@ impl<'de> Deserialize<'de> for FieldConfig {
 
                 let values = from_value(map.get("values").cloned().unwrap_or(Value::Null))
                     .map_err(D::Error::custom)?;
+                let regex_values =
+                    from_value(map.get("regex_values").cloned().unwrap_or(Value::Null))
+                        .map_err(D::Error::custom)?;
                 let values_mode =
                     from_value(map.get("values_mode").cloned().unwrap_or(Value::Null))
                         .map_err(D::Error::custom)?;
@@ -75,6 +83,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
                 Ok(FieldConfig {
                     path,
                     values,
+                    regex_values,
                     values_mode,
                     required,
                     function,

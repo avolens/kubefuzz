@@ -30,12 +30,17 @@ pub struct K8sResourceSpec {
     #[serde(rename = "enum", default)]
     pub _enum: Vec<serde_json::Value>,
 
+    #[serde(rename = "enum", default)]
+    pub _enum_regex: Vec<String>,
+
     #[serde(default)]
     pub required: Vec<String>,
 
     pub minmax: Option<(usize, usize)>,
 
     pub items: Option<Box<K8sResourceSpec>>,
+
+    pub format: Option<String>,
 
     #[serde(rename = "additionalProperties")]
     pub additional_properties: Option<Box<K8sResourceSpec>>,
@@ -220,6 +225,11 @@ fn constrain_spec(
             }
             None => {}
         }
+        // maybe we also have regex values
+
+        if fcnfg.regex_values.is_some() {
+            spec._enum_regex = fcnfg.regex_values.as_ref().unwrap().clone();
+        }
 
         // also set min and max values for arrays
         match &fcnfg.minmax {
@@ -332,6 +342,7 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
             }
         };
 
+    // verify gvk
     match verify_gvk(&constraint_config.gvk) {
         Ok(_) => {}
         Err(e) => {
@@ -342,6 +353,26 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
             );
         }
     }
+
+    // verify regex
+    for field in &constraint_config.fields {
+        if field.regex_values.is_some() {
+            for regex in field.regex_values.as_ref().unwrap() {
+                match Regex::new(&regex) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error_exit!(
+                            "invalid regex in constraint file '{}': {}",
+                            constraintfile_path,
+                            e
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // normalize paths
     for fcnfg in &mut constraint_config.fields {
         if !fcnfg.regex {
             fcnfg.path = normalize_path(&fcnfg.path);
