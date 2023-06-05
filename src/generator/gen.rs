@@ -20,7 +20,6 @@ fn gen_ip() -> serde_json::Value {
     return serde_json::Value::String(ip);
 }
 
-// todo : add support for date format and get correct quantities to be generated
 fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
@@ -36,14 +35,14 @@ fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
         }
         // quantities
         _ if lower == "cpu" || lower == "memory" => {
-            let mut s = gen_range(1, 100).to_string();
-            s.push_str("m");
-            s.into()
+            rand_str_regex(r"^[0-9]+([KMGTPE]i|[kMGTPE]|e[0-9]+|[m]?|[.][0-9]+)?$").into()
         }
         _ => {
             if format.is_some() {
                 match format.as_ref().unwrap().as_str() {
-                    "date-time" => serde_json::Value::String("2020-01-01T00:00:00Z".into()),
+                    "date-time" => {
+                        rand_str_regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z").into()
+                    }
                     "int-or-string" => rand_u64().into(),
                     &_ => gen_printable_string(gen_range(1, 25), None).into(),
                 }
