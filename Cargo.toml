@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.26"
+clap = { version = "4.3.2", features = ["derive"] }
 jsonpath_lib = "0.3.0"
 k8s-openapi = { version = "0.18.0", features = ["v1_26"] }
 kube = {version = "0.82.2", features = ["client"]}

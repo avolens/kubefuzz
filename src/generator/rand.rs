@@ -12,12 +12,13 @@ thread_local! {
     pub static RNG: RefCell<XorShiftRng> = RefCell::new(XorShiftRng::seed_from_u64(42));
 }
 
-pub fn seedrand() {
-    seed(rand::rngs::OsRng.gen());
+pub fn seedrand() -> u64 {
+    seed(rand::rngs::OsRng.gen())
 }
 
-pub fn seed(seed: u64) {
+pub fn seed(seed: u64) -> u64 {
     RNG.with(|rng| *rng.borrow_mut() = XorShiftRng::seed_from_u64(seed));
+    return seed;
 }
 
 pub fn gen_range<T>(low: T, high: T) -> T
