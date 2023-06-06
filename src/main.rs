@@ -4,11 +4,14 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log as rust_log;
 
+use args::Arguments;
+use clap::Args;
 use generator::gen::gen_resource;
 use generator::load_constrained_spec;
 use std::fs::File;
 use std::io::Write;
 
+mod args;
 mod conf;
 mod executor;
 mod generator;
@@ -17,7 +20,11 @@ mod log;
 #[tokio::main]
 async fn main() {
     log::initlog();
+
+    let args = Args::parse_args();
+
     generator::rand::seedrand();
+
     let slim_constraint = load_constrained_spec("constraint.yaml", "pod");
 
     let resc = gen_resource(&slim_constraint);
