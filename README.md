@@ -18,3 +18,13 @@ Chain of validating and mutating admission controllers can become complex. **Wha
 ## Future Ideas
 
 Fuzz CEL language directly
+
+
+## TODO
+
+[] do type confusion in yaml
+[] evaluate perf of generation
+[] evaluate perf of mutation
+[] deceide on terms schema/spec 
+[] find real world bugs
+[] research how kubefuzz would have found real world bugs
