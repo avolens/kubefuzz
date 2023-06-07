@@ -15,6 +15,8 @@ pub fn run(args: &Generate) {
 
     let constraintfiles = args.constraints[0].split(",");
 
+    let mut files_written: u64 = 0;
+
     for file in constraintfiles {
         //load_constrained_spec(constrait);
         let cspec = load_constrained_spec(file, &args.schemadir);
@@ -63,4 +65,6 @@ pub fn run(args: &Generate) {
             f.write_all(res.as_bytes()).unwrap();
         }
     }
+
+    info!("Done generating. Written {} files", files_written);
 }
