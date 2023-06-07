@@ -36,7 +36,7 @@ async fn main() {
         Action::Generate(args) => runtime::mode_generate::run(&args),
         Action::Mutate(args) => runtime::mode_mutate::run(&args),
         Action::Fuzz(args) => runtime::mode_fuzz::run(&args),
-        Action::GetResources(args) => runtime::mode_get_resources::run(&args),
+        Action::GetSchemas(args) => runtime::mode_getschemas::run(&args),
         _ => {
             panic!("cli parsing broken: unknown action");
         }

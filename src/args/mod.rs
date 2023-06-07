@@ -24,6 +24,7 @@ pub fn is_file(value: &str) -> Result<(), String> {
 }
 
 fn is_all_files(arr: &str) -> Result<String, String> {
+    // seems to be a bug in clap, we cant return a Vec<String> here
     let paths = arr.split(",");
     for path in paths {
         match is_file(path) {
@@ -58,8 +59,8 @@ pub enum Action {
     Mutate(Mutate),
     #[clap(name = "fuzz")]
     Fuzz(Fuzz),
-    #[clap(name = "getresources")]
-    GetResources(GetResources),
+    #[clap(name = "get-schemas")]
+    GetSchemas(GetSchemas),
 }
 
 #[derive(Parser, Debug)]
@@ -68,13 +69,17 @@ pub struct Generate {
     #[arg(short, long, value_parser = is_all_files, required = true)]
     pub constraints: Vec<String>,
 
-    /// directory containing k8s json resource specs
+    /// directory containing k8s json resource schemas
     #[arg(short, long,value_parser = is_dir)]
-    pub specdir: String,
+    pub schemadir: String,
 
-    #[arg(short, long)]
-    /// number of resources to generate
-    pub num: Option<u32>,
+    /// output direcotry of generated schemas
+    #[arg(short, long,value_parser = is_dir)]
+    pub out: String,
+
+    #[arg(short, long, default_value = "10")]
+    /// number of manifests to generate per resource
+    pub num: u32,
 }
 
 #[derive(Parser, Debug)]
@@ -82,4 +87,4 @@ pub struct Fuzz {}
 #[derive(Parser, Debug)]
 pub struct Mutate {}
 #[derive(Parser, Debug)]
-pub struct GetResources {}
+pub struct GetSchemas {}

@@ -112,13 +112,9 @@ pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
     return false;
 }
 
-pub fn loadspec(specname: &str) -> K8sResourceSpec {
-    let fullpath = PathBuf::from("schemagen/schemas/")
-        .join(specname.clone())
-        .with_extension("json");
-
-    info!("Reading spec file: {:?}", fullpath);
-    let rawspec = fs::read_to_string(fullpath).expect("Unable to read spec file");
+pub fn loadspec(specpath: &str) -> K8sResourceSpec {
+    info!("Reading spec file: {:?}", specpath);
+    let rawspec = fs::read_to_string(specpath).expect("Unable to read spec file");
 
     serde_json::from_str(&rawspec).expect("Unable to parse spec file")
 }
@@ -316,7 +312,7 @@ fn verify_gvk(gvk: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sResourceSpec {
+pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sResourceSpec {
     info!("Reading constraint file: {:?}", constraintfile_path);
 
     if !constraintfile_path.contains(".") {
@@ -379,7 +375,11 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
         }
     }
 
-    let mut spec = loadspec(specname);
+    let fullpath = PathBuf::from(schemadir)
+        .join(&constraint_config.resource_name)
+        .with_extension("json");
+
+    let mut spec = loadspec(fullpath.to_str().expect("invalid path"));
 
     spec.gvk = Some(constraint_config.gvk.clone());
 
@@ -398,7 +398,7 @@ pub fn load_constrained_spec(constraintfile_path: &str, specname: &str) -> K8sRe
             error_exit!(
                 "invalid path '{}' for spec '{}' stemming from constraintfile '{}'",
                 paths.path,
-                specname,
+                &constraint_config.resource_name,
                 constraintfile_path
             );
         }
