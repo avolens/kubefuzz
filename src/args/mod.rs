@@ -87,4 +87,12 @@ pub struct Fuzz {}
 #[derive(Parser, Debug)]
 pub struct Mutate {}
 #[derive(Parser, Debug)]
-pub struct GetSchemas {}
+pub struct GetSchemas {
+    /// openapi endpoint of k8s api, typically at /openapi/v2
+    #[arg(short, long)]
+    pub endpoint: String,
+
+    /// output directory of generated schemas
+    #[arg(short, long,value_parser = is_dir)]
+    pub out: String,
+}
