@@ -18,6 +18,7 @@ rand_regex = "0.15.1"
 rand_xorshift = "0.3.0"
 regex = "1.8.2"
 serde = { version = "1.0", features = ["derive"] }
+serde-transcode = "1.1.1"
 serde_json = "1.0"
 serde_yaml = "0.9.21"
 tokio = {version="1.28.2", features=["full"]}

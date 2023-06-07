@@ -84,8 +84,30 @@ pub struct Generate {
 
 #[derive(Parser, Debug)]
 pub struct Fuzz {}
+
 #[derive(Parser, Debug)]
-pub struct Mutate {}
+pub struct Mutate {
+    /// comma seperated list of resources to be mutated
+    #[arg(short, long, required = true,value_parser = is_all_files)]
+    pub resources: Vec<String>,
+
+    /// directory containing k8s json resource schemas
+    #[arg(short, long,value_parser = is_dir)]
+    pub schemadir: String,
+
+    /// output directory of mutated resources
+    #[arg(short, long,value_parser = is_dir)]
+    pub out: String,
+
+    /// number of mutated resources to generate per resource
+    #[arg(short, long, default_value = "10")]
+    pub num: u32,
+
+    /// comma seperated list of constraint files to apply
+    #[arg(short, long, value_parser = is_all_files, required = true)]
+    pub constraints: Vec<String>,
+}
+
 #[derive(Parser, Debug)]
 pub struct GetSchemas {
     /// openapi endpoint of k8s api, typically at /openapi/v2

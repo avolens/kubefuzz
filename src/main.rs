@@ -1,5 +1,6 @@
 #![allow(dead_code, unused)]
 extern crate pretty_env_logger;
+extern crate serde_transcode;
 
 #[macro_use]
 extern crate log as rust_log;
@@ -18,6 +19,7 @@ mod conf;
 mod executor;
 mod generator;
 mod log;
+mod mutator;
 
 #[tokio::main]
 async fn main() {
