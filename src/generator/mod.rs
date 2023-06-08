@@ -30,7 +30,7 @@ pub struct K8sResourceSpec {
     #[serde(rename = "enum", default)]
     pub _enum: Vec<serde_json::Value>,
 
-    #[serde(rename = "enum", default)]
+    #[serde(rename = "enum_regex", default)]
     pub _enum_regex: Vec<String>,
 
     #[serde(default)]
