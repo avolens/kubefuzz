@@ -21,7 +21,7 @@ Fuzz CEL language directly
 
 
 ## TODO
-- [ ] add descriptions of actions
+- [x] add descriptions of actions
 - [ ] do type confusion in yaml
 - [ ] evaluate perf of generation
 - [ ] evaluate perf of mutation

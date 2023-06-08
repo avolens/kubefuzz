@@ -54,12 +54,16 @@ pub struct Arguments {
 #[derive(Parser, Debug)]
 pub enum Action {
     #[clap(name = "generate")]
+    /// generate manifests with constraints
     Generate(Generate),
     #[clap(name = "mutate")]
+    /// mutate existing manifests with constraints
     Mutate(Mutate),
     #[clap(name = "fuzz")]
+    /// fuzz admission controller chain with constraints
     Fuzz(Fuzz),
     #[clap(name = "get-schemas")]
+    /// get json schemas from k8s api
     GetSchemas(GetSchemas),
 }
 
