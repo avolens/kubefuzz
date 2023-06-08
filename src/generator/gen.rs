@@ -48,7 +48,7 @@ fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
     }
 }
 
-fn gen_bool() -> serde_json::Value {
+pub fn gen_bool() -> serde_json::Value {
     serde_json::Value::Bool(gen_range(0, 2) == 1)
 }
 
