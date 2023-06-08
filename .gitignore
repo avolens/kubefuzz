@@ -1,1 +1,5 @@
 /target
+/docs/node_modules
+/docs/package-lock.json
+/docs/.yarn
+/docs/.docusaurus
