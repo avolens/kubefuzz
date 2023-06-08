@@ -4,6 +4,7 @@ use crate::generator::rand::{
 };
 
 // todo : somehow handle quantaties
+// todo: FIX regex generation!
 
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -97,29 +98,42 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
     return arr;
 }
 
-pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
-    // first check values and regex_values
-
-    if !spec._enum.is_empty() && !spec._enum_regex.is_empty() {
+pub fn rand_enum_val(
+    _enum: &Vec<serde_json::Value>,
+    _enum_regex: &Vec<String>,
+) -> Option<serde_json::Value> {
+    // for json path there might be enums and regex enums defined
+    // if both are defined, randomly choose one
+    if !_enum.is_empty() && !_enum_regex.is_empty() {
         match gen_range(0, 2) {
             0 => {
-                return spec._enum[gen_range(0, spec._enum.len())].clone();
+                return Some(_enum[gen_range(0, _enum.len())].clone());
             }
             1 => {
-                return rand_str_regex(&spec._enum_regex[gen_range(0, spec._enum_regex.len())])
-                    .into();
+                return Some(serde_json::Value::String(rand_str_regex(
+                    &_enum_regex[gen_range(0, _enum_regex.len())],
+                )));
             }
 
             _ => {}
         }
     }
 
-    if !spec._enum.is_empty() {
-        return spec._enum[gen_range(0, spec._enum.len())].clone();
+    if !_enum.is_empty() {
+        return Some(_enum[gen_range(0, _enum.len())].clone());
     }
 
-    if !spec._enum_regex.is_empty() {
-        return rand_str_regex(&spec._enum_regex[gen_range(0, spec._enum_regex.len())]).into();
+    if !_enum_regex.is_empty() {
+        return Some(rand_str_regex(&_enum_regex[gen_range(0, _enum_regex.len())]).into());
+    }
+    return None;
+}
+
+pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
+    // first check values and regex_values
+
+    if let Some(val) = rand_enum_val(&spec._enum, &spec._enum_regex) {
+        return val;
     }
 
     if spec._type == "object" {
