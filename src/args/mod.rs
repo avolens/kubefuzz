@@ -114,7 +114,7 @@ pub struct GetSchemas {
     #[arg(short, long)]
     pub endpoint: String,
 
-    /// output directory of generated schemas
-    #[arg(short, long,value_parser = is_dir)]
+    /// directory in which the 'schemas' directory will be created
+    #[arg(short, long,value_parser = is_dir, default_value=".")]
     pub out: String,
 }
