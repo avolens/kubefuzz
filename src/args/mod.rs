@@ -53,17 +53,20 @@ pub struct Arguments {
 
 #[derive(Parser, Debug)]
 pub enum Action {
-    #[clap(name = "generate")]
     /// generate manifests with constraints
+    #[clap(name = "generate")]
     Generate(Generate),
-    #[clap(name = "mutate")]
+
     /// mutate existing manifests with constraints
+    #[clap(name = "mutate")]
     Mutate(Mutate),
-    #[clap(name = "fuzz")]
+
     /// fuzz admission controller chain with constraints
+    #[clap(name = "fuzz")]
     Fuzz(Fuzz),
-    #[clap(name = "get-schemas")]
+
     /// get json schemas from k8s api
+    #[clap(name = "get-schemas")]
     GetSchemas(GetSchemas),
 }
 
@@ -81,13 +84,37 @@ pub struct Generate {
     #[arg(short, long,value_parser = is_dir)]
     pub out: String,
 
-    #[arg(short, long, default_value = "10")]
     /// number of manifests to generate per resource
+    #[arg(short, long, default_value = "10")]
     pub num: u32,
 }
 
 #[derive(Parser, Debug)]
-pub struct Fuzz {}
+pub struct Fuzz {
+    /// optional custom path to kubeconfig
+    #[arg(short, long)]
+    pub kubeconfig: Option<String>,
+
+    /// comma seperated list of constraint files to apply
+    #[arg(short, long, value_parser = is_all_files, required = true)]
+    pub constraints: Vec<String>,
+
+    /// directory containing k8s json resource schemas
+    #[arg(short, long,value_parser = is_dir,required = true)]
+    pub schemadir: String,
+
+    /// comma seperated list of namespaces to fuzz
+    #[arg(short, long, default_value = "default")]
+    pub namespaces: Vec<String>,
+
+    /// directory to save and update fuzzing results
+    #[arg(short, long,value_parser = is_dir)]
+    pub fuzzdir: String,
+
+    /// time in seconds until an api request is considered timed out
+    #[arg(short, long, default_value = "5")]
+    pub timeout: u32,
+}
 
 #[derive(Parser, Debug)]
 pub struct Mutate {

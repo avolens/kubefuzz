@@ -10,7 +10,7 @@ use kube::{
 };
 use serde_json::Value;
 
-pub async fn get_client(kconf_path: &Option<&str>) -> Client {
+pub async fn get_client(kconf_path: Option<&str>) -> Client {
     /*
     This function returns a kube client, which is used to authenticate with the
     ku8s api. If Kubeconfig cannot be infered from environment, use provided path
