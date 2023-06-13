@@ -19,6 +19,9 @@ memory
 // TODO: look into property removing clash
 // -> e.g $. supplied but we want to remove smth
 
+//  TODO: handle quantity with fields such as resources.cpu
+// which will have type object but additionalproperties
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct K8sResourceSpec {
     #[serde(rename = "type")]

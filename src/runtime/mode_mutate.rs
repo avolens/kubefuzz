@@ -116,7 +116,7 @@ pub fn run(args: &Mutate) {
         }
 
         for i in 0..args.num {
-            mutate_resource(&mut rawdata, &spec, "$");
+            mutate_resource(&mut rawdata, &spec);
 
             let mut file = match File::create(dir.with_file_name(match ext {
                 Some("json") => format!("{}.json", i),

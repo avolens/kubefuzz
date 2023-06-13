@@ -21,7 +21,7 @@ fn gen_ip() -> serde_json::Value {
     return serde_json::Value::String(ip);
 }
 
-fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
+pub fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
     let lower = propname.to_lowercase();
     match lower {
         _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),

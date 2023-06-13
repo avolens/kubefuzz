@@ -12,6 +12,10 @@ thread_local! {
     pub static RNG: RefCell<XorShiftRng> = RefCell::new(XorShiftRng::seed_from_u64(42));
 }
 
+pub fn chance(c: f64) -> bool {
+    RNG.with(|rng| rng.borrow_mut().gen_bool(c))
+}
+
 pub fn seedrand() -> u64 {
     seed(rand::rngs::OsRng.gen())
 }
