@@ -19,6 +19,9 @@ Chain of validating and mutating admission controllers can become complex. **Wha
 
 Fuzz CEL language directly
 
+## regex generation
+
+regexes are generated with full unicode range!
 
 ## TODO
 - [x] add descriptions of actions

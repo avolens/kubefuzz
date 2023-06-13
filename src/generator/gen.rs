@@ -4,7 +4,6 @@ use crate::generator::rand::{
 };
 
 // todo : somehow handle quantaties
-// todo: FIX regex generation!
 
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
