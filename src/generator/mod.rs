@@ -378,9 +378,14 @@ pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sR
         }
     }
 
-    let fullpath = PathBuf::from(schemadir)
-        .join(&constraint_config.resource_name)
-        .with_extension("json");
+    let kind = constraint_config
+        .gvk
+        .split(".")
+        .last()
+        .unwrap()
+        .to_lowercase();
+
+    let fullpath = PathBuf::from(schemadir).join(&kind).with_extension("json");
 
     let mut spec = loadspec(fullpath.to_str().expect("invalid path"));
 
@@ -401,7 +406,7 @@ pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sR
             error_exit!(
                 "invalid path '{}' for spec '{}' stemming from constraintfile '{}'",
                 paths.path,
-                &constraint_config.resource_name,
+                &kind,
                 constraintfile_path
             );
         }

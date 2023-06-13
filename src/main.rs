@@ -4,7 +4,6 @@ extern crate serde_transcode;
 
 #[macro_use]
 extern crate log as rust_log;
-// todo: remove resource_name and parse everything based on gvk
 use args::{Action, Arguments};
 use clap::Parser;
 use generator::gen::gen_resource;
