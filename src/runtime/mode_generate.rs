@@ -63,6 +63,7 @@ pub fn run(args: &Generate) {
             };
 
             f.write_all(res.as_bytes()).unwrap();
+            files_written += 1;
         }
     }
 
