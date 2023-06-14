@@ -20,7 +20,15 @@ fn gen_ip() -> serde_json::Value {
     return serde_json::Value::String(ip);
 }
 
-pub fn gen_string(propname: &str, format: &Option<String>) -> serde_json::Value {
+pub fn gen_string(propname: &str, format: &Option<String>, is_quant: bool) -> serde_json::Value {
+    // handle quantaties
+
+    if is_quant {
+        // todo: we have to do it manually, since there are only
+        // a few sensible quantaties
+        return rand_str_regex("([+-]?[0-9.]+)([eEinumkKMGTP])").into();
+    }
+
     let lower = propname.to_lowercase();
     match lower {
         _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),
@@ -86,7 +94,7 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
         arr.as_array_mut()
             .unwrap()
             .push(match items._type.as_str() {
-                "string" => gen_string(propname, &items.format),
+                "string" => gen_string(propname, &items.format, items.is_quant),
                 "boolean" => gen_bool(),
                 "integer" => gen_int(propname, &items.format),
                 "object" => gen_property(&items, propname),
@@ -174,7 +182,7 @@ pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value
 
     // else, we have a primitive type
     match spec._type.as_str() {
-        "string" => return gen_string(propname, &spec.format),
+        "string" => return gen_string(propname, &spec.format, spec.is_quant),
         "boolean" => return gen_bool(),
         "array" => return gen_array(spec, propname),
         "integer" => return gen_int(propname, &spec.format),

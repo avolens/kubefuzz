@@ -41,7 +41,12 @@ pub async fn get_client(kconf_path: Option<&str>) -> Client {
     }
 }
 
-pub async fn deploy_resource(resource_raw: Value, gvk: &str, client: Client) {
+pub async fn deploy_resource(
+    resource_raw: Value,
+    gvk: &str,
+    client: Client,
+    namespace: &str,
+) -> Result<DynamicObject, kube::Error> {
     let gvkv = gvk.split(".").collect::<Vec<&str>>();
     let gvk = GroupVersionKind::gvk(gvkv[0], gvkv[1], gvkv[2]);
 
@@ -53,48 +58,11 @@ pub async fn deploy_resource(resource_raw: Value, gvk: &str, client: Client) {
     )
     .data(resource_raw);
 
-    // todo: set namespace
-    let api = Api::<DynamicObject>::namespaced_with(client, "default", &apiresource);
+    let api = Api::<DynamicObject>::namespaced_with(client, namespace, &apiresource);
 
     let postparams = kube::api::PostParams {
         dry_run: true,
         field_manager: None,
     };
-    api.create(&postparams, &dynobj).await.unwrap();
-
-    /*
-    let apis: Vec<_> = Discovery::
-        .await
-        .unwrpa()
-        .into_group_version_kind()
-        .remove(&gvk);
-    */
-
-    /*
-    // Use the first ApiResource found. Note: There could be multiple resources found
-    // if the kind is not unique. Handle this case appropriately for your use case.
-    let ar = apis.into_iter().next().unwrap();
-
-    // Create a DynamicObject from the Value and the found ApiResource
-    let resource = DynamicObject::new(name, &namespace, &ar);
-
-    // Create an Api instance with the found ApiResource
-    let api = Api::from(client)
-        .within(&namespace)
-        .group(&ar.group)
-        .version(&ar.version)
-        .kind(&ar.kind);
-
-    // Perform the create operation
-    match api
-        .create(&kube::api::PostParams::default(), &resource)
-        .await
-    {
-        Ok(_) => println!("Resource created successfully!"),
-        Err(e) => eprintln!("Failed to create resource: {}", e),
-    }
-
-    Ok(())
-
-    */
+    api.create(&postparams, &dynobj).await
 }

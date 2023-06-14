@@ -1,13 +1,14 @@
 use crate::conf::ValuesMode;
+use crate::generator::k8sresc::K8sResourceSpec;
 use crate::{conf::ConstraintConfig, error_exit};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::{fs, path::PathBuf};
 
 pub mod gen;
+pub mod k8sresc;
 pub mod rand;
 /*
 This struct represents the swagger spec json structure
@@ -18,39 +19,6 @@ memory
 
 // TODO: look into property removing clash
 // -> e.g $. supplied but we want to remove smth
-
-//  TODO: handle quantity with fields such as resources.cpu
-// which will have type object but additionalproperties
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct K8sResourceSpec {
-    #[serde(rename = "type")]
-    pub _type: String,
-
-    #[serde(default)]
-    pub properties: HashMap<String, Box<K8sResourceSpec>>,
-
-    #[serde(rename = "enum", default)]
-    pub _enum: Vec<serde_json::Value>,
-
-    #[serde(rename = "enum_regex", default)]
-    pub _enum_regex: Vec<String>,
-
-    #[serde(default)]
-    pub required: Vec<String>,
-
-    pub minmax: Option<(usize, usize)>,
-
-    pub items: Option<Box<K8sResourceSpec>>,
-
-    pub format: Option<String>,
-
-    #[serde(rename = "additionalProperties")]
-    pub additional_properties: Option<Box<K8sResourceSpec>>,
-
-    // set later at runtime based on constraint config
-    pub gvk: Option<String>,
-}
 
 fn jsonpath_len(path: &str) -> usize {
     return path.split('.').filter(|x| !x.is_empty()).count();

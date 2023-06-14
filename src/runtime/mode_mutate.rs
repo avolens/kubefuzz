@@ -1,7 +1,7 @@
 use crate::args::Mutate;
 use crate::error_exit;
+use crate::generator::k8sresc::K8sResourceSpec;
 use crate::generator::load_constrained_spec;
-use crate::generator::K8sResourceSpec;
 use crate::mutator::mutate_resource;
 use serde_transcode::transcode;
 use std::collections::HashMap;

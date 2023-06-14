@@ -45,7 +45,7 @@ pub fn run(args: &Generate) {
 
         // write files
         for i in 0..args.num {
-            let res = match serde_yaml::to_string(&gen_resource(&cspec)) {
+            let res = match serde_json::to_string(&gen_resource(&cspec)) {
                 Ok(res) => res,
                 Err(e) => {
                     error!("could not serialize resource: {}", e);

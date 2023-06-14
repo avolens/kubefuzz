@@ -1,7 +1,7 @@
 use crate::generator::{
     gen::{gen_bool, gen_property, gen_string, rand_enum_val},
+    k8sresc::K8sResourceSpec,
     rand::{chance, gen_printable_string, gen_range, rand_int, shuffle},
-    K8sResourceSpec,
 };
 use serde_json::Value;
 use std::collections::HashMap;
@@ -78,7 +78,7 @@ fn mutate_string(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
     *resource = match gen_range(0, 3) {
         0 => "".into(),
         1 => gen_printable_string(gen_range(1, 26), None).into(),
-        2 => gen_string(curpath, &constraint.format),
+        2 => gen_string(curpath, &constraint.format, constraint.is_quant),
         _ => panic!(""),
     }
 }
