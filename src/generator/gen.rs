@@ -190,7 +190,11 @@ pub fn gen_resource(spec: &K8sResourceSpec) -> serde_json::Value {
     // as they are required by the API
 
     let gvkv = spec.gvk.as_ref().unwrap().split('.').collect::<Vec<&str>>();
-    resc["apiVersion"] = format!("{}/{}", gvkv[0], gvkv[1]).into();
+
+    resc["apiVersion"] = match gvkv[0] {
+        "" => format!("{}", gvkv[1]).into(),
+        _ => format!("{}/{}", gvkv[0], gvkv[1]).into(),
+    };
     resc["kind"] = gvkv[2].into();
 
     resc["metadata"]["name"] = format!(
