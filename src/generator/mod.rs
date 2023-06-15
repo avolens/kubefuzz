@@ -33,11 +33,65 @@ fn normalize_path(path: &str) -> String {
         .join(".");
 }
 
-pub fn get_required_subs(ppath: &str, constraintconfig: &ConstraintConfig) -> HashSet<String> {
+fn iter_all_children(curpath: &str, curspec: &K8sResourceSpec, fullpaths: &mut Vec<String>) {
+    // recursively iterates over all children, returning all terminal paths.
+    // this method is used when setting required values based on a regex
+    if curspec.properties.is_empty() && curspec.items.is_none() {
+        fullpaths.push(curpath.to_string());
+        return;
+    }
+
+    let children = if curspec._type == "array" {
+        curspec.items.as_ref().unwrap().properties.keys()
+    } else {
+        curspec.properties.keys()
+    };
+
+    for child in children {
+        let childpath = format!("{}.{}", curpath, child);
+        let childspec = if curspec._type == "array" {
+            curspec
+                .items
+                .as_ref()
+                .unwrap()
+                .properties
+                .get(child)
+                .unwrap()
+        } else {
+            curspec.properties.get(child).unwrap()
+        };
+
+        iter_all_children(&childpath, childspec, fullpaths);
+    }
+}
+
+pub fn get_required_subs(
+    ppath: &str,
+    spec: &K8sResourceSpec,
+    constraintconfig: &ConstraintConfig,
+) -> HashSet<String> {
     let ppath_len = jsonpath_len(ppath);
     let mut required_subs: HashSet<String> = HashSet::new();
 
     for fcnfg in &constraintconfig.fields {
+        // if we have a regex, we have to search all terminal
+        // children paths for matches
+        if fcnfg.regex {
+            let mut terminal_children: Vec<String> = vec![];
+            iter_all_children(ppath, spec, &mut terminal_children);
+
+            let compiled = Regex::new(&fcnfg.path).expect("invalid regex");
+
+            for child in terminal_children {
+                if compiled.is_match(&child) {
+                    // may be faster to check if we already inserted?
+                    required_subs
+                        .insert(child.split('.').collect::<Vec<&str>>()[ppath_len].to_string());
+                }
+            }
+            continue;
+        }
+
         let fcnfg_parts = fcnfg.path.split('.').collect::<Vec<&str>>();
         let fcnfg_len = jsonpath_len(&fcnfg.path);
 
@@ -110,16 +164,19 @@ fn constrain_spec(
     */
 
     // add to this paths required values all children that are required
-    for req_child in get_required_subs(&parentpath, &constraintconfig) {
-        debug!(
-            "adding '{}' to required values of {}",
-            req_child, parentpath
-        );
-        if !spec.required.contains(&req_child) {
-            if spec._type == "array" {
-                spec.items.as_mut().unwrap().required.push(req_child);
-            } else {
-                spec.required.push(req_child);
+    // if this is a non terminal property
+    if !(spec.properties.is_empty() && spec.items.is_none()) {
+        for req_child in get_required_subs(&parentpath, &spec, &constraintconfig) {
+            debug!(
+                "adding '{}' to required values of {}",
+                req_child, parentpath
+            );
+            if !spec.required.contains(&req_child) {
+                if spec._type == "array" {
+                    spec.items.as_mut().unwrap().required.push(req_child);
+                } else {
+                    spec.required.push(req_child);
+                }
             }
         }
     }
