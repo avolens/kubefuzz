@@ -2,8 +2,6 @@ use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{from_value, Value};
 
-// todo: add type restriction to regex paths
-
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ValuesMode {
     #[serde(rename = "override")]

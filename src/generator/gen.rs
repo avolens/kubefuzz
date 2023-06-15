@@ -3,8 +3,6 @@ use crate::generator::rand::{
     gen_printable_string, gen_range, rand_date_time, rand_int, rand_str_regex, shuffle,
 };
 
-// todo : somehow handle quantaties
-
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -31,12 +29,13 @@ pub fn gen_string(propname: &str, format: &Option<String>, is_quant: bool) -> se
 
     let lower = propname.to_lowercase();
     match lower {
+        _ if lower == "name" => rand_str_regex("[-a-z]{0,15}").into(),
         _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),
         _ if lower.contains("ip") => gen_ip(),
         _ if lower == "host" => gen_ip(),
         _ if lower.contains("group") || lower == "runasuser" || lower.contains("username") => {
             gen_printable_string(
-                gen_range(1, 25),
+                gen_range(1, 15),
                 Some("_-abcdefghijklmnopqrstuvwxyz".as_bytes()), // losely based on unix usernme naming rules
             )
             .into()
@@ -46,10 +45,10 @@ pub fn gen_string(propname: &str, format: &Option<String>, is_quant: bool) -> se
                 match format.as_ref().unwrap().as_str() {
                     "date-time" => rand_date_time().into(),
                     "int-or-string" => rand_int::<i64>().into(),
-                    &_ => gen_printable_string(gen_range(1, 25), None).into(),
+                    &_ => gen_printable_string(gen_range(1, 15), None).into(),
                 }
             } else {
-                gen_printable_string(gen_range(1, 25), None).into()
+                gen_printable_string(gen_range(1, 15), None).into()
             }
         }
     }

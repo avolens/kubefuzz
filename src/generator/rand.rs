@@ -52,7 +52,12 @@ pub fn rand_date_time() -> String {
 }
 
 pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
-    const PRINTABLE_CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[{]};:'\",<.>/?";
+    // we have to be very conservative here. Many resource fields require
+    // strict validation that often times does not allow for special characters.
+    // I'ts better to generate a string that is too restrictive than one that
+    // is too permissive and straight up fails validation.
+    const PRINTABLE_CHARS: &[u8] =
+        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     let cs = match charset {
         Some(cs) => cs,

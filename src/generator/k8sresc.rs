@@ -1,5 +1,3 @@
-//  TODO: handle quantity with fields such as resources.cpu
-// which will have type object but additionalproperties
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

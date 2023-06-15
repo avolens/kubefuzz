@@ -81,7 +81,7 @@ fn mutate_string(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
 
     *resource = match gen_range(0, 3) {
         0 => "".into(),
-        1 => gen_printable_string(gen_range(1, 26), None).into(),
+        1 => gen_printable_string(gen_range(1, 15), None).into(),
         2 => gen_string(curpath, &constraint.format, constraint.is_quant),
         _ => panic!(""),
     }
