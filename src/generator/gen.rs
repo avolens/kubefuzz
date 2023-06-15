@@ -29,7 +29,7 @@ pub fn gen_string(propname: &str, format: &Option<String>, is_quant: bool) -> se
 
     let lower = propname.to_lowercase();
     match lower {
-        _ if lower == "name" => rand_str_regex("[-a-z]{0,15}").into(),
+        _ if lower == "name" => rand_str_regex("[a-z]{1,15}").into(),
         _ if lower.contains("port") => gen_range(0, 65535).to_string().into(),
         _ if lower.contains("ip") => gen_ip(),
         _ if lower == "host" => gen_ip(),
@@ -89,17 +89,10 @@ fn gen_array(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value {
         None => (1, 20),
     };
 
-    for _ in 0..gen_range(min, max + 1) + 1 {
+    for _ in 0..gen_range(min, max + 1) {
         arr.as_array_mut()
             .unwrap()
-            .push(match items._type.as_str() {
-                "string" => gen_string(propname, &items.format, items.is_quant),
-                "boolean" => gen_bool(),
-                "integer" => gen_int(propname, &items.format),
-                "object" => gen_property(&items, propname),
-                "array" => panic!("nested arrays not supported"),
-                &_ => panic!("schema type not known"),
-            });
+            .push(gen_property(&items, propname));
     }
     return arr;
 }
