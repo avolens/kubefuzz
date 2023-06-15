@@ -1,6 +1,6 @@
 # Kubefuzz
 
-[](arch/architecture.drawio.png)
+![](arch/architecture.drawio.png)
 
 Chain of validating and mutating admission controllers can become complex. **What manifests might unexpectedly get accepted/rejected?**
 
