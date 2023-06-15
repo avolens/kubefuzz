@@ -1,7 +1,7 @@
 use crate::generator::{
     gen::{gen_bool, gen_property, gen_string, rand_enum_val},
     k8sresc::K8sResourceSpec,
-    rand::{chance, gen_printable_string, gen_range, rand_int, shuffle},
+    rand::{chance, gen_printable_string, gen_range, rand_int, rand_str_regex, shuffle},
 };
 use serde_json::Value;
 use std::collections::HashMap;
@@ -74,6 +74,10 @@ fn mutate_number(resource: &mut serde_json::Value, constraint: &K8sResourceSpec)
 fn mutate_string(resource: &mut serde_json::Value, constraint: &K8sResourceSpec, curpath: &str) {
     // empty string, random string, random conform string
     debug!("mutating string {}", curpath);
+
+    if constraint.is_quant {
+        *resource = rand_str_regex("([+-]?[0-9]+)(m|k|M|G|T|P|E)").into()
+    }
 
     *resource = match gen_range(0, 3) {
         0 => "".into(),
