@@ -6,11 +6,6 @@ extern crate serde_transcode;
 extern crate log as rust_log;
 use args::{Action, Arguments};
 use clap::Parser;
-use generator::gen::gen_resource;
-use generator::load_constrained_spec;
-use std::fs::File;
-use std::io::Write;
-
 mod runtime;
 
 mod args;
@@ -38,8 +33,5 @@ async fn main() {
         Action::Mutate(args) => runtime::mode_mutate::run(&args),
         Action::Fuzz(args) => runtime::mode_fuzz::run(&args).await,
         Action::GetSchemas(args) => runtime::mode_getschemas::run(&args),
-        _ => {
-            panic!("cli parsing broken: unknown action");
-        }
     }
 }
