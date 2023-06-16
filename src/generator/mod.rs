@@ -17,10 +17,6 @@ multiple x- fields thtat we dont bother reading into
 memory
 */
 
-// TODO: do this!
-// TODO: look into property removing clash
-// -> e.g $. supplied but we want to remove smth
-
 fn jsonpath_len(path: &str) -> usize {
     return path.split('.').filter(|x| !x.is_empty()).count();
 }
@@ -118,13 +114,6 @@ pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
     for each in &constraintconfig.fields {
         let vectorized_allow = each.path.split(".").collect::<Vec<&str>>();
 
-        if each.regex {
-            let re = Regex::new(&each.path).expect("invalid regex");
-            if re.is_match(path) {
-                return true;
-            }
-        }
-
         for (i, each) in vectorized_allow.iter().enumerate() {
             if each != &vectorized_path[i] {
                 break;
@@ -165,18 +154,17 @@ fn constrain_spec(
 
     // add to this paths required values all children that are required
     // if this is a non terminal property
-    if !(spec.properties.is_empty() && spec.items.is_none()) {
+    if !spec.properties.is_empty() || spec.items.is_some() {
         for req_child in get_required_subs(&parentpath, &spec, &constraintconfig) {
             debug!(
                 "adding '{}' to required values of {}",
                 req_child, parentpath
             );
-            if !spec.required.contains(&req_child) {
-                if spec._type == "array" {
-                    spec.items.as_mut().unwrap().required.push(req_child);
-                } else {
-                    spec.required.push(req_child);
-                }
+
+            if spec._type == "array" {
+                spec.items.as_mut().unwrap().required.push(req_child);
+            } else {
+                spec.required.push(req_child);
             }
         }
     }
@@ -184,6 +172,11 @@ fn constrain_spec(
     // remove or recurse into subproperties depending on constraint
     let mut remove_properties = vec![];
     let mut recurse_properties = vec![];
+
+    let required = match spec._type.as_str() {
+        "array" => spec.items.as_ref().unwrap().required.clone(),
+        _ => spec.required.clone(),
+    };
 
     // if we have an array, we need to check the items property
     let toiter = if spec._type != "array" {
@@ -196,7 +189,7 @@ fn constrain_spec(
     for (key, _subspec) in toiter {
         let subpath = format!("{}.{}", parentpath, key);
 
-        if path_allowed(&subpath, &constraintconfig) {
+        if path_allowed(&subpath, &constraintconfig) || required.contains(key) {
             recurse_properties.push((key.clone(), subpath));
         } else {
             remove_properties.push(key.clone());
@@ -277,16 +270,9 @@ fn constrain_spec(
         return;
     }
 
-    // remove all properties that are not on the allowlist
-    // first get all required fields, depending on the type "array" or other
-    let req_vals = match spec._type.as_str() {
-        "array" => &spec.items.as_ref().unwrap().required,
-        &_ => &spec.required,
-    };
-
     // check if we are removing required values
     for k in &remove_properties {
-        if req_vals.contains(k) {
+        if required.contains(k) {
             warn!(
                 "removing a required field '{}.{}'. K8s will API probably reject this",
                 parentpath, &k
