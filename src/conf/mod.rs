@@ -16,9 +16,9 @@ pub struct FieldConfig {
     pub values: Option<Vec<serde_json::Value>>,
     pub regex_values: Option<Vec<String>>,
     pub values_mode: Option<ValuesMode>,
-    pub required: Option<bool>,
+    pub required: bool,
     pub minmax: Option<(usize, usize)>,
-
+    pub remove: bool,
     #[serde(default)]
     pub regex: bool,
 
@@ -49,10 +49,11 @@ impl<'de> Deserialize<'de> for FieldConfig {
                 values: None,
                 regex_values: None,
                 values_mode: None,
-                required: None,
+                required: false,
                 function: None,
                 minmax: None,
                 regex: false,
+                remove: false,
             }),
             Value::Object(map) => {
                 let path = match map.get("path") {
@@ -68,13 +69,16 @@ impl<'de> Deserialize<'de> for FieldConfig {
                 let values_mode =
                     from_value(map.get("values_mode").cloned().unwrap_or(Value::Null))
                         .map_err(D::Error::custom)?;
-                let required = from_value(map.get("required").cloned().unwrap_or(Value::Null))
-                    .map_err(D::Error::custom)?;
+                let required =
+                    from_value(map.get("required").cloned().unwrap_or(Value::Bool(false)))
+                        .map_err(D::Error::custom)?;
                 let function = from_value(map.get("function").cloned().unwrap_or(Value::Null))
                     .map_err(D::Error::custom)?;
                 let minmax = from_value(map.get("minmax").cloned().unwrap_or(Value::Null))
                     .map_err(D::Error::custom)?;
                 let regex = from_value(map.get("regex").cloned().unwrap_or(Value::Bool(false)))
+                    .map_err(D::Error::custom)?;
+                let remove = from_value(map.get("remove").cloned().unwrap_or(Value::Bool(false)))
                     .map_err(D::Error::custom)?;
 
                 Ok(FieldConfig {
@@ -86,6 +90,7 @@ impl<'de> Deserialize<'de> for FieldConfig {
                     function,
                     minmax,
                     regex,
+                    remove,
                 })
             }
             _ => Err(D::Error::invalid_type(
