@@ -2,9 +2,8 @@ use crate::conf::ValuesMode;
 use crate::generator::k8sresc::K8sResourceSpec;
 use crate::{conf::ConstraintConfig, error_exit};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::{fs, path::PathBuf};
 
 pub mod gen;
@@ -16,10 +15,6 @@ of the k8s API. It has more fields like description and
 multiple x- fields thtat we dont bother reading into
 memory
 */
-
-fn jsonpath_len(path: &str) -> usize {
-    return path.split('.').filter(|x| !x.is_empty()).count();
-}
 
 fn normalize_path(path: &str) -> String {
     return path
@@ -61,66 +56,113 @@ fn iter_all_children(curpath: &str, curspec: &K8sResourceSpec, fullpaths: &mut V
     }
 }
 
-pub fn get_required_subs(
+#[derive(PartialEq, Debug)]
+enum ChildAction {
+    Allowed,
+    Required,
+    Forbidden,
+}
+
+fn get_children_status(
     ppath: &str,
     spec: &K8sResourceSpec,
     constraintconfig: &ConstraintConfig,
-) -> HashSet<String> {
-    let ppath_len = jsonpath_len(ppath);
-    let mut required_subs: HashSet<String> = HashSet::new();
+    paths_covered: &mut Vec<String>,
+) -> HashMap<String, ChildAction> {
+    // this function maps each child of the parent path to a ChildAction
 
-    for fcnfg in &constraintconfig.fields {
-        // if we have a regex, we have to search all terminal
-        // children paths for matches
-        if fcnfg.regex {
-            let mut terminal_children: Vec<String> = vec![];
-            iter_all_children(ppath, spec, &mut terminal_children);
+    // at the start, all children are mapped to forbidden
+    let mut children: HashMap<String, ChildAction> = match spec._type.as_str() {
+        "array" => spec.items.as_ref().unwrap().properties.keys(),
+        "object" => spec.properties.keys(),
+        _ => panic!("unexpected type in spec"),
+    }
+    .map(|x| (format!("{}.{}", ppath, x), ChildAction::Forbidden))
+    .collect();
 
-            let compiled = Regex::new(&fcnfg.path).expect("invalid regex");
+    // first go through all non remove fieldconfigs
+    for fcfg in constraintconfig.fields.iter().filter(|x| !x.remove) {
+        // go through all children that are still forbidden
+        for (childpath, action) in children
+            .iter_mut()
+            // we care for fields still forbidden or allowed (latter could become required)
+            .filter(|(_, x)| **x != ChildAction::Required)
+        {
+            // is_allowed is computed differently based on if we are dealing with
+            // a regex or a normal path
+            let is_allowed = match fcfg.regex {
+                false => path_allowed(childpath, &fcfg.path),
+                true => {
+                    // regex path. In addition we need to go through all
+                    // possible subpaths in order to check for egex matches
 
-            for child in terminal_children {
-                if compiled.is_match(&child) {
-                    // may be faster to check if we already inserted?
-                    required_subs
-                        .insert(child.split('.').collect::<Vec<&str>>()[ppath_len].to_string());
+                    let compiled = Regex::new(&fcfg.path).expect("invalid regex");
+                    let mut subpaths: Vec<String> = vec![];
+                    iter_all_children(ppath, spec, &mut subpaths);
+
+                    let mut found = false;
+                    for subpath in subpaths {
+                        if compiled.is_match(&subpath) && path_allowed(childpath, &subpath) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    found
                 }
-            }
-            continue;
-        }
+            };
 
-        let fcnfg_parts = fcnfg.path.split('.').collect::<Vec<&str>>();
-        let fcnfg_len = jsonpath_len(&fcnfg.path);
-
-        debug!("checking if {} is a subpath of {}", fcnfg.path, ppath);
-        if fcnfg_len <= ppath_len {
-            continue;
-        }
-
-        if fcnfg.path.starts_with(&ppath) {
-            debug!("{} is a subpath of {}", fcnfg.path, ppath);
-            if fcnfg.required.is_some() {
-                if fcnfg.required.unwrap() {
-                    required_subs.insert(fcnfg_parts[ppath_len].to_string());
-                }
+            // if the child is allowed, we set it to allowed or required
+            if is_allowed {
+                *action = match fcfg.required {
+                    true => ChildAction::Required,
+                    false => ChildAction::Allowed,
+                };
             }
         }
     }
-    return required_subs;
+    // lastly, we might put some paths from allowed/required
+    // back into forbidden, because "remove" has a higher priority
+    for fcfg in constraintconfig.fields.iter().filter(|x| x.remove) {
+        // we just need to look at the childpaths
+        // that are now allowed or required
+
+        for (childpath, action) in children
+            .iter_mut()
+            .filter(|(_, x)| **x != ChildAction::Forbidden)
+        {
+            // again, the computation depends on if we are dealing with
+            // regex paths
+
+            let should_remove = match fcfg.regex {
+                // here, we only want to remove if the childpath
+                // is exactly the one in the fieldconfig
+                false => &fcfg.path == childpath,
+                true => Regex::new(&fcfg.path)
+                    .expect("invalid regex")
+                    .is_match(&childpath),
+            };
+            if should_remove {
+                *action = ChildAction::Forbidden;
+                // since we wont "touch" this path, we have to
+                // add the config path to the covered ones right here
+                paths_covered.push(fcfg.path.clone());
+            }
+        }
+    }
+
+    children
 }
 
-pub fn path_allowed(path: &str, constraintconfig: &ConstraintConfig) -> bool {
+pub fn path_allowed(path: &str, allow: &str) -> bool {
     let vectorized_path = path.split(".").collect::<Vec<&str>>();
+    let vectorized_allow = allow.split(".").collect::<Vec<&str>>();
 
-    for each in &constraintconfig.fields {
-        let vectorized_allow = each.path.split(".").collect::<Vec<&str>>();
-
-        for (i, each) in vectorized_allow.iter().enumerate() {
-            if each != &vectorized_path[i] {
-                break;
-            }
-            if vectorized_allow.len() - 1 == i || vectorized_path.len() - 1 == i {
-                return true;
-            }
+    for (i, each) in vectorized_allow.iter().enumerate() {
+        if each != &vectorized_path[i] {
+            break;
+        }
+        if vectorized_allow.len() - 1 == i || vectorized_path.len() - 1 == i {
+            return true;
         }
     }
 
@@ -152,49 +194,39 @@ fn constrain_spec(
     optional values
     */
 
-    // add to this paths required values all children that are required
-    // if this is a non terminal property
-    if !spec.properties.is_empty() || spec.items.is_some() {
-        for req_child in get_required_subs(&parentpath, &spec, &constraintconfig) {
-            debug!(
-                "adding '{}' to required values of {}",
-                req_child, parentpath
-            );
-
-            if spec._type == "array" {
-                spec.items.as_mut().unwrap().required.push(req_child);
-            } else {
-                spec.required.push(req_child);
-            }
-        }
-    }
-
     // remove or recurse into subproperties depending on constraint
     let mut remove_properties = vec![];
     let mut recurse_properties = vec![];
+
+    // if this is a non terminal property, we will check its children
+    // to determine which we can remove, which to recurse into and which
+    // to additionally set to "required"
+    if !spec.properties.is_empty() || spec.items.is_some() {
+        for (childpath, action) in
+            get_children_status(parentpath, spec, constraintconfig, paths_covered)
+        {
+            let child = childpath.split('.').last().unwrap().to_string();
+            match action {
+                ChildAction::Forbidden => remove_properties.push(child),
+                ChildAction::Allowed => recurse_properties.push((child, childpath)),
+                ChildAction::Required => {
+                    recurse_properties.push((child.clone(), childpath));
+
+                    // where we save required to depends on type
+
+                    match spec._type.as_str() {
+                        "array" => spec.items.as_mut().unwrap().required.push(child),
+                        _ => spec.required.push(child),
+                    }
+                }
+            }
+        }
+    }
 
     let required = match spec._type.as_str() {
         "array" => spec.items.as_ref().unwrap().required.clone(),
         _ => spec.required.clone(),
     };
-
-    // if we have an array, we need to check the items property
-    let toiter = if spec._type != "array" {
-        spec.properties.iter_mut()
-    } else {
-        assert!(spec.properties.is_empty());
-        spec.items.as_mut().unwrap().properties.iter_mut()
-    };
-
-    for (key, _subspec) in toiter {
-        let subpath = format!("{}.{}", parentpath, key);
-
-        if path_allowed(&subpath, &constraintconfig) || required.contains(key) {
-            recurse_properties.push((key.clone(), subpath));
-        } else {
-            remove_properties.push(key.clone());
-        }
-    }
 
     // now check if the current path is an exact match
     // in which case we want to update some properties
@@ -274,7 +306,7 @@ fn constrain_spec(
     for k in &remove_properties {
         if required.contains(k) {
             warn!(
-                "removing a required field '{}.{}'. K8s will API probably reject this",
+                "removing a required field '{}.{}'. K8s API could reject this",
                 parentpath, &k
             );
         }
