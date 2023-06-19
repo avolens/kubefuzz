@@ -1,9 +1,29 @@
 fields:
+
+- "$.status.message"
+
+- path: "$.spec.containers"
+  minmax: [1,5] 
+
 - path: "$.spec.containers.securityContext.privileged"
   values:
   - true
   required: true
-- path: "$.spec.containers"
-  minmax: [0,20] 
+  values_mode: add
+
+- path: "$.spec.containers.name"
+  regex_values:
+    - "[0-9]{3}abc"
+
+- path: .*valueFrom\..*Ref.name
+  regex: true
+  required: true
+  values:
+    - "noproblem"
+  values_mode: add
+
+- path: $.spec.containers.resources
+  remove: true
+
 
 gvk: ".v1.Pod"

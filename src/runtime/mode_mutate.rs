@@ -78,7 +78,7 @@ pub fn run(args: &Mutate) {
         };
 
         let (group, version) = match rawdata.get("apiVersion") {
-            Some(av) => match rawdata.get("apiVersion").unwrap().as_str() {
+            Some(_) => match rawdata.get("apiVersion").unwrap().as_str() {
                 Some(gv) => {
                     let gv: Vec<&str> = gv.split("/").collect();
                     match gv.len() {

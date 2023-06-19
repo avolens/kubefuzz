@@ -1,10 +1,10 @@
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::Parser;
 use std::path::Path;
 
-fn is_dir(value: &str) -> Result<(String), String> {
+fn is_dir(value: &str) -> Result<String, String> {
     let path = Path::new(&value);
     if path.is_dir() {
-        Ok((path.to_str().expect("could not read path").to_string()))
+        Ok(path.to_str().expect("could not read path").to_string())
     } else {
         Err(String::from(
             "Specified path is not a directory or does not exist",
@@ -29,7 +29,7 @@ fn is_all_files(arr: &str) -> Result<String, String> {
     for path in paths {
         match is_file(path) {
             Ok(_) => {}
-            Err(e) => {
+            Err(_e) => {
                 return Err(format!(
                     "Specified path '{}' is not a file or does not exist",
                     path

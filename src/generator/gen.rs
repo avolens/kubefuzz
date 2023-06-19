@@ -3,7 +3,6 @@ use crate::generator::rand::{
     gen_printable_string, gen_range, rand_date_time, rand_int, rand_str_regex, shuffle,
 };
 
-use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static GENERATION_COUNT: AtomicU64 = AtomicU64::new(0);

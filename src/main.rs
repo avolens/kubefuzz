@@ -1,4 +1,4 @@
-#![allow(dead_code, unused)]
+//#![allow(dead_code, unused)]
 extern crate pretty_env_logger;
 extern crate serde_transcode;
 

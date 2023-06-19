@@ -4,9 +4,8 @@ use crate::generator::{
     rand::{chance, gen_printable_string, gen_range, rand_int, rand_str_regex, shuffle},
 };
 use serde_json::Value;
-use std::collections::HashMap;
 
-fn mutate_bool(resource: &mut serde_json::Value, constraint: &K8sResourceSpec) {
+fn mutate_bool(resource: &mut serde_json::Value) {
     // simple, we just always generate a new value
     *resource = gen_bool();
 }
@@ -91,7 +90,6 @@ fn mutate_array(resource: &mut serde_json::Value, constraint: &K8sResourceSpec, 
     // 1. we might remove some elements
 
     debug!("mutating array at {}", curpath);
-    let remove_n = gen_range(0, resource.as_array().unwrap().len());
 
     shuffle(resource.as_array_mut().unwrap());
 
@@ -116,7 +114,7 @@ fn mutate_array(resource: &mut serde_json::Value, constraint: &K8sResourceSpec, 
                 mutate_number(obj, constraint.items.as_ref().unwrap());
             }
             Value::Bool(_) => {
-                mutate_bool(obj, constraint.items.as_ref().unwrap());
+                mutate_bool(obj);
             }
             Value::Null => {
                 panic!("null value in array")
@@ -194,7 +192,7 @@ fn mutate_object(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
         // todo
 
         match field {
-            Value::Bool(_) => mutate_bool(field, subconstraint),
+            Value::Bool(_) => mutate_bool(field),
             Value::Number(_) => mutate_number(field, subconstraint),
             Value::String(_) => mutate_string(field, subconstraint, &key),
             Value::Array(_) => mutate_array(field, subconstraint, &subpath),
@@ -205,7 +203,7 @@ fn mutate_object(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
 
     // 3. we might add some fields
 
-    let mut toadd: Vec<String> = constraint
+    let toadd: Vec<String> = constraint
         .properties
         .keys()
         .filter(|fieldname| !resource.as_object().unwrap().contains_key(*fieldname))

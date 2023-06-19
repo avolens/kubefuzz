@@ -5,7 +5,7 @@ use crate::error_exit;
 use kube::{
     api::{DynamicObject, GroupVersionKind},
     config::{KubeConfigOptions, Kubeconfig},
-    discovery::{ApiResource, Discovery},
+    discovery::ApiResource,
     Api, Client, Config,
 };
 use serde_json::Value;
@@ -52,7 +52,7 @@ pub async fn deploy_resource(
 
     let apiresource = ApiResource::from_gvk(&gvk);
 
-    let mut dynobj = DynamicObject::new(
+    let dynobj = DynamicObject::new(
         resource_raw["metadata"]["name"].to_string().as_str(),
         &apiresource,
     )
