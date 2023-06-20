@@ -18,4 +18,4 @@ cargo build -r
 
 # Documenation
 
-Documenation is available at [](https://kubefuzz.kubernetes-security.com/)
+Documenation is available at https://kubefuzz.kubernetes-security.com/
