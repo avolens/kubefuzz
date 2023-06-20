@@ -103,9 +103,9 @@ pub struct Fuzz {
     #[arg(short, long,value_parser = is_dir,required = true)]
     pub schemadir: String,
 
-    /// comma seperated list of namespaces to fuzz
+    /// namespace to use while fuzzing
     #[arg(short, long, default_value = "default")]
-    pub namespaces: Vec<String>,
+    pub namespaces: String,
 
     /// directory to save and update fuzzing results
     #[arg(short, long,value_parser = is_dir)]
