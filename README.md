@@ -2,33 +2,20 @@
 
 ![](arch/architecture.drawio.png)
 
-Chain of validating and mutating admission controllers can become complex. **What manifests might unexpectedly get accepted/rejected?**
+Kubefuzz is a generative and mutative fuzzer for kubernetes admission controller chains.
+It can be used to uncover unexpected behavior in complex admission controller setups. It works
+by generating and mutating kubernetes resources according to the schema supplied by the cluster
+openapi scheme, and a user written constrain config that further limits what fields are generated
+and how.
 
-## Challenges to solve
+# Building
 
-- Generate meaningful manifests: pods,namespaces,volumes,deployments... Also do that in a general way. We want to avoid manual work
-- AC instrumentation. Get *optional* feedback from AC's thats more than accept/rejec
-- Configuration. Users should have control over what fields of a manifest type will get mutated and which are constant
+```
+git clone https://github.com/avolens/kubefuzz
+cd kubefuzz
+cargo build -r 
+```
 
-## The mutator
+# Documenation
 
-- Input: Kubernetes resource scheme, User config with fields to fuzz
-- Output: mutated manifests
-
-## Future Ideas
-
-Fuzz CEL language directly
-
-## regex generation
-
-regexes are generated with full unicode range!
-
-## TODO
-- [x] add descriptions of actions
-- [ ] do type confusion in yaml
-- [ ] evaluate perf of generation
-- [ ] evaluate perf of mutation
-- [ ] deceide on terms schema/spec 
-- [ ] find real world bugs
-- [ ] research how kubefuzz would have found real world bugs
-- [ ] remove unused
+Documenation is available at [](https://kubefuzz.kubernetes-security.com/)
