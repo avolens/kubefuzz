@@ -1,29 +1,41 @@
 fields:
+- path: "$.spec.containers.name"
+  required: true
 
-- "$.status.message"
+- path: "$.spec.containers.image"
+  required: true
 
-- path: "$.spec.containers"
-  minmax: [1,5] 
+- path: .*\.containers\..*gmsaCredentialSpecName
+  regex: true
+  regex_values:
+    - "static"
+
+- path: "$.spec.containers.securityContext.seccompProfile.localhostProfile"
+  remove: true
+
+- path: "$.spec.containers.securityContext.seccompProfile.type"
+  values: 
+    - "RuntimeDefault" 
+  values_mode: override
+
 
 - path: "$.spec.containers.securityContext.privileged"
   values:
   - true
   required: true
-  values_mode: add
 
-- path: "$.spec.containers.name"
-  regex_values:
-    - "[0-9]{3}abc"
-
-- path: .*valueFrom\..*Ref.name
-  regex: true
-  required: true
+- path: "$.spec.containers.securityContext.windowsOptions.hostProcess"
   values:
-    - "noproblem"
+  - false
+
+
+- path: "$.spec.containers.securityContext.allowPrivilegeEscalation"
+  values:
+  - true
+  required: true
   values_mode: add
 
-- path: $.spec.containers.resources
-  remove: true
 
+- "$.spec.containers.securityContext"
 
 gvk: ".v1.Pod"

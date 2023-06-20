@@ -14,7 +14,7 @@ pub async fn run(args: &Fuzz) {
     let client = get_client(args.kubeconfig.as_deref()).await;
 
     let mut constraintmap = HashMap::<String, K8sResourceSpec>::new();
-    let mut corpus = HashMap::<f64, CorpusEntry>::new();
+    let mut corpus = HashMap::<u64, CorpusEntry>::new();
 
     for file in args.constraints[0].split(",") {
         let cspec = load_constrained_spec(file, &args.schemadir);
@@ -35,7 +35,7 @@ pub async fn run(args: &Fuzz) {
 
 async fn do_fuzz_iteration(
     client: kube::Client,
-    corpus: &mut HashMap<f64, CorpusEntry<'_>>,
+    corpus: &mut HashMap<u64, CorpusEntry<'_>>,
     constraintmap: &HashMap<String, K8sResourceSpec>,
 ) {
     debug!("doing fuzzing iteration");
@@ -49,8 +49,16 @@ async fn do_fuzz_iteration(
     let file = std::fs::File::create("sample.json").unwrap();
     serde_json::to_writer_pretty(file, &sample).unwrap();
 
-    let a = deploy_resource(sample, ".v1.Pod", client, "default").await;
-    println!("{:?}", a);
+    match deploy_resource(sample, ".v1.Pod", client, "default").await {
+        Ok(dynobj) => {
+            println!("resource okay")
+        }
+        Err(e) => {
+            println!("resource error: {}", e)
+        }
+    }
 }
 
-fn calculate_coverage() {}
+fn calculate_coverage(errormsg: &str) -> u64 {
+    0
+}
