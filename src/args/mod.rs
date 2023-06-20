@@ -105,7 +105,7 @@ pub struct Fuzz {
 
     /// namespace to use while fuzzing
     #[arg(short, long, default_value = "default")]
-    pub namespaces: String,
+    pub namespace: String,
 
     /// directory to save and update fuzzing results
     #[arg(short, long,value_parser = is_dir)]
