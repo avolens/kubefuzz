@@ -108,19 +108,53 @@ async fn submit_and_get_cov(client: kube::Client, sample: &serde_json::Value, ar
 
             "".to_string()
         }
-        Err(e) => match e {
-            kube::Error::Api(ae) => {
-                returncode = ae.code;
+        Err(kube::Error::Api(ae)) => {
+            returncode = ae.code;
 
-                if ae.code != 200 {
-                    // in case of DOS, we save this sample to disk
-                    save_sample(sample, args, FuzzResult::Error);
-                }
-
-                ae.message
+            if ae.message.contains("connection refused") {
+                error_exit!("API returned connection refused for admission controller. Stopping. Answer: {:#?}", ae);
             }
-            _ => "".to_string(),
-        },
+
+            match ae.status.as_str() {
+                "Failure" => match ae.reason.as_str() {
+                    "BadRequest" => {
+                        // this hints at an error in the resource itself, often
+                        // happening due to go unmarshalling errors. So this is
+                        // not an error happening in an admission controller. We
+                        // add this to the corpus but we dont save it as an error
+                    }
+
+                    "Invalid" => {
+                        // this hints at semantic errors in the resource, which
+                        // we sadly cannot detect because the specification is
+                        // not descriptive enough. Still new coverage but we also
+                        // do not save it as an error in an admission controller because
+                        // it isn't.
+                    }
+
+                    // todo: we haveto verify that InternalError is always thrown
+                    // for admission controller errors
+                    "InternalError" => {
+                        // this is an error happening in an admission controller,
+                        // being unable to process the request. We can save this
+                        save_sample(sample, args, FuzzResult::Error);
+                    }
+                    _ => {
+                        // the reason can be set by the admission controller
+                    }
+                },
+                _ => {
+                    error_exit!(
+                        "API returned unknown status on error that we cant handle {:#?}. Please report this",
+                        ae
+                    )
+                }
+            }
+
+            format!("{}{}", ae.reason, ae.message)
+        }
+
+        Err(_) => panic!("unexpected error"),
     };
 
     calculate_coverage(format!("{}{}", returncode, errormsg).as_str())
