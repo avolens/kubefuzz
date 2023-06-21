@@ -115,9 +115,17 @@ pub struct Fuzz {
     #[arg(short, long, default_value = "5")]
     pub timeout: u32,
 
-    /// maximum number of entries in the corpus in memory
-    #[arg(short, long, default_value = "50")]
+    /// max number of samples into in memory coprus
+    #[arg(short, long, default_value = "100")]
     pub max_corpus_count: usize,
+
+    /// max number of accepted samples saved into fuzzing directory
+    #[arg(short, long, default_value = "50")]
+    pub max_accepted: usize,
+
+    /// max number of error causing samples saved into fuzzing directory
+    #[arg(short, long, default_value = "50")]
+    pub max_error: usize,
 }
 
 #[derive(Parser, Debug)]

@@ -31,52 +31,65 @@ pub async fn run(args: &Fuzz) {
         constraintmap.insert(cspec.gvk.clone().unwrap(), cspec);
     }
 
+    // prepare fuzzing directory
+    for subdir in ["accepted", "error"] {
+        let dir = format!("{}/{}", args.fuzzdir, subdir);
+        if !fs::metadata(&dir).is_ok() {
+            fs::create_dir(&dir).expect("failed to create fuzzing directory");
+        }
+    }
+
     loop {
         do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
         println!("corpus size: {}", corpus.len());
     }
 }
 
-fn file_in_dir(directory_path: &str, filename: &str) -> Result<(bool, usize), std::io::Error> {
-    let entries = fs::read_dir(directory_path)?;
-    let mut exists = false;
+fn count_files(directory: &str) -> usize {
     let mut count = 0;
-
-    for entry in entries.filter_map(|entry| entry.ok()) {
-        if entry.file_type().map(|ft| ft.is_file()).unwrap_or(false) {
+    for entry in fs::read_dir(directory).expect("read_dir call failed") {
+        let entry = entry.expect("failed to get entry");
+        let path = entry.path();
+        if path.is_file() {
             count += 1;
-            if entry.file_name().to_string_lossy() == filename {
-                exists = true;
-            }
         }
     }
-
-    Ok((exists, count))
+    count
 }
 
-fn save_sample(sample: &serde_json::Value, args: &Fuzz) {
+enum FuzzResult {
+    Accepted,
+    Error,
+}
+
+fn save_sample(sample: &serde_json::Value, args: &Fuzz, result: FuzzResult) {
     // first get number of saved samples in directory
 
-    let fullpath = format!(
-        "{}/{}.json",
+    let dirpath = format!(
+        "{}/{}",
         args.fuzzdir,
-        SAMPLE_COUNT.fetch_add(1, Ordering::SeqCst)
+        match result {
+            FuzzResult::Accepted => "accepted",
+            FuzzResult::Error => "error",
+        },
     );
-    let (exists, count) =
-        file_in_dir(&args.fuzzdir, &fullpath).expect("fuzzing directory not readable");
 
-    if exists {
-        error_exit!(
-            "not overwriting existing sample ({} already exists)",
-            fullpath
-        );
-    }
-    if count > args.max_corpus_count {
-        info!("max corpus count reached. Stopping.");
+    if count_files(&dirpath)
+        > match result {
+            FuzzResult::Accepted => args.max_accepted,
+            FuzzResult::Error => args.max_error,
+        }
+    {
+        info!("max disk corpus count reached in {}. Stopping.", &dirpath);
         std::process::exit(0);
     }
 
     // write sample to disk
+    let fullpath = format!(
+        "{}/{}.json",
+        dirpath,
+        SAMPLE_COUNT.fetch_add(1, Ordering::SeqCst)
+    );
     let f = std::fs::File::create(fullpath).expect("failed to create file for sample");
     serde_json::to_writer_pretty(f, sample).expect("failed to write sample to file");
 }
@@ -86,20 +99,17 @@ async fn submit_and_get_cov(client: kube::Client, sample: &serde_json::Value, ar
     let errormsg = match deploy_resource(&sample, client, &args.namespace).await {
         Ok(_) => {
             // we also want to save it to disk
-            println!("saving");
-            save_sample(sample, args);
+            save_sample(sample, args, FuzzResult::Accepted);
 
             "".to_string()
         }
         Err(e) => match e {
             kube::Error::Api(ae) => {
-                println!("error: {}", ae);
                 returncode = ae.code;
 
-                // in case of DOS
-
-                if ae.code != 200 && ae.message.contains("failed calling webhook") {
-                    error_exit!("API returned denial of service for webhook: {}", ae.message);
+                if ae.code != 200 {
+                    // in case of DOS, we save this sample to disk
+                    save_sample(sample, args, FuzzResult::Error);
                 }
 
                 ae.message
