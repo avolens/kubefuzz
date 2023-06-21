@@ -49,8 +49,14 @@ fn mutate_number(resource: &mut serde_json::Value, constraint: &K8sResourceSpec)
         1 => {
             // arithmetic
             *resource = match constraint.format.as_deref() {
-                Some("int32") => ((resource.as_i64().unwrap() as i32) + gen_range(-1, 2)).into(),
-                None | Some("int64") => ((resource.as_i64().unwrap()) + gen_range(-1, 2)).into(),
+                Some("int32") => (resource.as_i64().unwrap() as i32)
+                    .wrapping_add(gen_range(-1, 2))
+                    .into(),
+                None | Some("int64") => resource
+                    .as_i64()
+                    .unwrap()
+                    .wrapping_add(gen_range(-1, 2))
+                    .into(),
                 Some(_) => {
                     panic!("number format not covered")
                 }
@@ -94,24 +100,25 @@ fn mutate_array(resource: &mut serde_json::Value, constraint: &K8sResourceSpec, 
     shuffle(resource.as_array_mut().unwrap());
 
     for _ in 0..gen_range(0, resource.as_array().unwrap().len()) {
-        resource.as_array_mut().unwrap().pop();
+        let r = resource.as_array_mut().unwrap().pop();
     }
 
     // 2. we might mutate all elements
 
+    // constraint already is .items
     for obj in resource.as_array_mut().unwrap() {
         match obj {
             Value::Object(_) => {
-                mutate_object(obj, constraint.items.as_ref().unwrap(), curpath);
+                mutate_object(obj, constraint, curpath);
             }
             Value::Array(_) => {
-                mutate_array(obj, constraint.items.as_ref().unwrap(), curpath);
+                mutate_array(obj, constraint, curpath);
             }
             Value::String(_) => {
-                mutate_string(obj, constraint.items.as_ref().unwrap(), curpath);
+                mutate_string(obj, constraint, curpath);
             }
             Value::Number(_) => {
-                mutate_number(obj, constraint.items.as_ref().unwrap());
+                mutate_number(obj, constraint);
             }
             Value::Bool(_) => {
                 mutate_bool(obj);
@@ -139,15 +146,19 @@ fn mutate_object(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
         *resource = val;
         return;
     }
-    // todo : type confusion
 
     // 1. we might remove some non required fields
+
+    let required = match constraint._type.as_str() {
+        "array" => &constraint.items.as_ref().unwrap().required,
+        _ => &constraint.required,
+    };
 
     let toremove: Vec<String> = resource
         .as_object()
         .unwrap()
         .keys()
-        .filter(|fieldname| !constraint.required.contains(fieldname) && chance(0.1))
+        .filter(|fieldname| !required.contains(fieldname) && chance(0.1))
         .map(|s| s.clone())
         .collect();
 
@@ -180,16 +191,11 @@ fn mutate_object(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
         }
         debug!("mutating field {}", subpath);
 
-        let subconstraint = constraint.properties.get(key);
-
-        if subconstraint.is_none() {
-            continue;
+        let subconstraint = match constraint._type.as_str() {
+            "array" => constraint.items.as_ref().unwrap().properties.get(key),
+            _ => constraint.properties.get(key),
         }
-
-        let subconstraint = subconstraint.unwrap();
-
-        // handle required values
-        // todo
+        .unwrap();
 
         match field {
             Value::Bool(_) => mutate_bool(field),
