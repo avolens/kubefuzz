@@ -39,10 +39,15 @@ pub async fn run(args: &Fuzz) {
         }
     }
 
-    loop {
-        do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
-        println!("corpus size: {}", corpus.len());
+    if args.iterations == 0 {
+        loop {
+            do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
+        }
+        for _ in 0..args.iterations {
+            do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
+        }
     }
+    info!("done fuzzing.");
 }
 
 fn count_files(directory: &str) -> usize {

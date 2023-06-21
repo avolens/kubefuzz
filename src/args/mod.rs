@@ -126,6 +126,10 @@ pub struct Fuzz {
     /// max number of error causing samples saved into fuzzing directory
     #[arg(short, long, default_value = "50")]
     pub max_error: usize,
+
+    /// number of fuzzing iterations to perform, 0 = infinite
+    #[arg(short, long, default_value = "0")]
+    pub iterations: usize,
 }
 
 #[derive(Parser, Debug)]
