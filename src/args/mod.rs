@@ -114,6 +114,10 @@ pub struct Fuzz {
     /// time in seconds until an api request is considered timed out
     #[arg(short, long, default_value = "5")]
     pub timeout: u32,
+
+    /// maximum number of entries in the corpus in memory
+    #[arg(short, long, default_value = "50")]
+    pub max_corpus_count: usize,
 }
 
 #[derive(Parser, Debug)]
@@ -137,6 +141,10 @@ pub struct Mutate {
     /// comma seperated list of constraint files to apply
     #[arg(short, long, value_parser = is_all_files, required = true)]
     pub constraints: Vec<String>,
+
+    /// max number of samples saved into fuzzing directory
+    #[arg(short, long, default_value = "50")]
+    pub max_samples: usize,
 }
 
 #[derive(Parser, Debug)]

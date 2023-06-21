@@ -42,13 +42,28 @@ pub async fn get_client(kconf_path: Option<&str>) -> Client {
 }
 
 pub async fn deploy_resource(
-    resource_raw: Value,
-    gvk: &str,
+    resource_raw: &Value,
     client: Client,
     namespace: &str,
 ) -> Result<DynamicObject, kube::Error> {
-    let gvkv = gvk.split(".").collect::<Vec<&str>>();
-    let gvk = GroupVersionKind::gvk(gvkv[0], gvkv[1], gvkv[2]);
+    let gv = resource_raw
+        .get("apiVersion")
+        .expect("missing apiVersion in resource!")
+        .as_str()
+        .unwrap();
+
+    let kind = resource_raw
+        .get("kind")
+        .expect("missing kind in resource!")
+        .as_str()
+        .unwrap();
+
+    let (group, version) = match gv.split_once("/") {
+        Some((g, v)) => (g, v),
+        None => ("", gv),
+    };
+
+    let gvk = GroupVersionKind::gvk(group, version, &kind);
 
     let apiresource = ApiResource::from_gvk(&gvk);
 
@@ -56,7 +71,7 @@ pub async fn deploy_resource(
         resource_raw["metadata"]["name"].to_string().as_str(),
         &apiresource,
     )
-    .data(resource_raw);
+    .data(resource_raw.clone());
 
     let api = Api::<DynamicObject>::namespaced_with(client, namespace, &apiresource);
 
@@ -64,5 +79,6 @@ pub async fn deploy_resource(
         dry_run: true,
         field_manager: None,
     };
+
     api.create(&postparams, &dynobj).await
 }
