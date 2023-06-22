@@ -12,6 +12,7 @@ use std::hash::Hasher;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
+use std::time::Instant;
 use std::{fs, thread};
 use twox_hash::XxHash64;
 
@@ -28,10 +29,12 @@ pub struct FuzzingStats {
     pub mutated: AtomicUsize,
     pub errors: AtomicUsize,
     pub accepted: AtomicUsize,
-    pub rejected: AtomicUsize,
     pub corpus_size: AtomicUsize,
     pub newcov: AtomicUsize,
     pub starttime: std::time::Instant,
+    pub last_newcov: AtomicU64,   // for these three last fields
+    pub last_error: AtomicU64,    // we are using u64s instead of stamps
+    pub last_accepted: AtomicU64, // so we can avoid Arc<Mutex>> stuff
 }
 impl Default for FuzzingStats {
     fn default() -> Self {
@@ -41,10 +44,12 @@ impl Default for FuzzingStats {
             mutated: 0.into(),
             errors: 0.into(),
             accepted: 0.into(),
-            rejected: 0.into(),
             corpus_size: 0.into(),
             newcov: 0.into(),
             starttime: std::time::Instant::now(),
+            last_newcov: 0.into(),
+            last_error: 0.into(),
+            last_accepted: 0.into(),
         }
     }
 }
@@ -195,6 +200,10 @@ async fn submit_and_get_cov(
                         // being unable to process the request. We can save this
                         save_sample(sample, args, FuzzResult::Error);
                         stats.errors.fetch_add(1, Ordering::SeqCst);
+
+                        stats
+                            .last_error
+                            .store(stats.starttime.elapsed().as_secs(), Ordering::SeqCst);
                     }
                     _ => {
                         // the reason can be set by the admission controller
@@ -241,6 +250,7 @@ async fn do_fuzz_iteration<'a, 'b>(
 
     // lets generate fresh manifests
     for (gvk, constraint) in constraintmap {
+        // todo: we wanna generate more samples at once here
         let sample = gen_resource(constraint);
         stats.generated.fetch_add(1, Ordering::SeqCst);
 
@@ -252,7 +262,6 @@ async fn do_fuzz_iteration<'a, 'b>(
     // add new coverage to corpus
     for (cov, val, constraint) in newcov {
         if !corpus.contains_key(&cov) {
-            stats.newcov.fetch_add(1, Ordering::SeqCst);
             let newentry = CorpusEntry {
                 data: val,
                 constraint: constraint,
@@ -263,6 +272,10 @@ async fn do_fuzz_iteration<'a, 'b>(
                 corpus.remove(&key);
             }
             corpus.insert(cov, newentry);
+            stats.newcov.fetch_add(1, Ordering::SeqCst);
+            stats
+                .last_newcov
+                .store(stats.starttime.elapsed().as_secs(), Ordering::SeqCst);
         }
     }
 
