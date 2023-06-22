@@ -120,11 +120,11 @@ pub struct Fuzz {
     pub max_corpus_count: usize,
 
     /// max number of accepted samples saved into fuzzing directory
-    #[arg(short, long, default_value = "50")]
+    #[arg(short = 'a', long, default_value = "50")]
     pub max_accepted: usize,
 
     /// max number of error causing samples saved into fuzzing directory
-    #[arg(short, long, default_value = "50")]
+    #[arg(short = 'e', long, default_value = "50")]
     pub max_error: usize,
 
     /// number of fuzzing iterations to perform, 0 = infinite
