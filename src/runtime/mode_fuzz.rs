@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::args::Fuzz;
 use crate::error_exit;
 use crate::executor::{deploy_resource, get_client};
@@ -7,17 +5,48 @@ use crate::generator::gen;
 use crate::generator::k8sresc::K8sResourceSpec;
 use crate::generator::{gen::gen_resource, load_constrained_spec};
 use crate::mutator::mutate_resource;
-use std::fs;
-use std::hash::Hasher;
-use twox_hash::XxHash64;
+use crate::tui::{tui_loop, tui_restore};
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::collections::HashMap;
+use std::hash::Hasher;
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
+use std::{fs, thread};
+use twox_hash::XxHash64;
 
 static SAMPLE_COUNT: AtomicU64 = AtomicU64::new(0);
 
 struct CorpusEntry<'a> {
     pub data: serde_json::Value,
     pub constraint: &'a K8sResourceSpec,
+}
+
+pub struct FuzzingStats {
+    pub exit: AtomicBool,
+    pub generated: AtomicUsize,
+    pub mutated: AtomicUsize,
+    pub errors: AtomicUsize,
+    pub accepted: AtomicUsize,
+    pub rejected: AtomicUsize,
+    pub corpus_size: AtomicUsize,
+    pub newcov: AtomicUsize,
+    pub starttime: std::time::Instant,
+}
+impl Default for FuzzingStats {
+    fn default() -> Self {
+        FuzzingStats {
+            exit: false.into(),
+            generated: 0.into(),
+            mutated: 0.into(),
+            errors: 0.into(),
+            accepted: 0.into(),
+            rejected: 0.into(),
+            corpus_size: 0.into(),
+            newcov: 0.into(),
+            starttime: std::time::Instant::now(),
+        }
+    }
 }
 
 pub async fn run(args: &Fuzz) {
@@ -39,14 +68,35 @@ pub async fn run(args: &Fuzz) {
         }
     }
 
-    if args.iterations == 0 {
-        loop {
-            do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
+    let mut stats = FuzzingStats::default();
+    let fuzzer_stats = Arc::new(stats);
+    let tui_stats = fuzzer_stats.clone();
+
+    let tui_thread = thread::spawn(move || {
+        tui_loop(tui_stats);
+        tui_restore();
+    });
+
+    let mut iter: usize = 0;
+    loop {
+        do_fuzz_iteration(
+            &client,
+            &mut corpus,
+            &constraintmap,
+            args,
+            fuzzer_stats.clone(),
+        )
+        .await;
+
+        if args.iterations != 0 && iter >= args.iterations {
+            break;
         }
-        for _ in 0..args.iterations {
-            do_fuzz_iteration(&client, &mut corpus, &constraintmap, args).await;
-        }
+
+        iter += 1;
     }
+
+    fuzzer_stats.exit.store(true, Ordering::Relaxed);
+    tui_thread.join().unwrap();
     info!("done fuzzing.");
 }
 
@@ -99,12 +149,18 @@ fn save_sample(sample: &serde_json::Value, args: &Fuzz, result: FuzzResult) {
     serde_json::to_writer_pretty(f, sample).expect("failed to write sample to file");
 }
 
-async fn submit_and_get_cov(client: kube::Client, sample: &serde_json::Value, args: &Fuzz) -> u64 {
+async fn submit_and_get_cov(
+    client: kube::Client,
+    sample: &serde_json::Value,
+    args: &Fuzz,
+    stats: Arc<FuzzingStats>,
+) -> u64 {
     let mut returncode = 0;
     let errormsg = match deploy_resource(&sample, client, &args.namespace).await {
         Ok(_) => {
             // we also want to save it to disk
             save_sample(sample, args, FuzzResult::Accepted);
+            stats.accepted.fetch_add(1, Ordering::SeqCst);
 
             "".to_string()
         }
@@ -138,6 +194,7 @@ async fn submit_and_get_cov(client: kube::Client, sample: &serde_json::Value, ar
                         // this is an error happening in an admission controller,
                         // being unable to process the request. We can save this
                         save_sample(sample, args, FuzzResult::Error);
+                        stats.errors.fetch_add(1, Ordering::SeqCst);
                     }
                     _ => {
                         // the reason can be set by the admission controller
@@ -165,6 +222,7 @@ async fn do_fuzz_iteration<'a, 'b>(
     corpus: &'a mut HashMap<u64, CorpusEntry<'b>>,
     constraintmap: &'b HashMap<String, K8sResourceSpec>,
     args: &Fuzz,
+    stats: Arc<FuzzingStats>,
 ) {
     debug!("doing fuzzing iteration");
 
@@ -174,8 +232,9 @@ async fn do_fuzz_iteration<'a, 'b>(
     for (_, entry) in &mut *corpus {
         let mut newresource = entry.data.clone();
         mutate_resource(&mut newresource, entry.constraint);
+        stats.mutated.fetch_add(1, Ordering::SeqCst);
 
-        let cov = submit_and_get_cov(client.clone(), &newresource, args).await;
+        let cov = submit_and_get_cov(client.clone(), &newresource, args, stats.clone()).await;
 
         newcov.push((cov, newresource, entry.constraint));
     }
@@ -183,8 +242,9 @@ async fn do_fuzz_iteration<'a, 'b>(
     // lets generate fresh manifests
     for (gvk, constraint) in constraintmap {
         let sample = gen_resource(constraint);
+        stats.generated.fetch_add(1, Ordering::SeqCst);
 
-        let cov = submit_and_get_cov(client.clone(), &sample, args).await;
+        let cov = submit_and_get_cov(client.clone(), &sample, args, stats.clone()).await;
 
         newcov.push((cov, sample, constraint));
     }
@@ -192,6 +252,7 @@ async fn do_fuzz_iteration<'a, 'b>(
     // add new coverage to corpus
     for (cov, val, constraint) in newcov {
         if !corpus.contains_key(&cov) {
+            stats.newcov.fetch_add(1, Ordering::SeqCst);
             let newentry = CorpusEntry {
                 data: val,
                 constraint: constraint,
@@ -204,6 +265,8 @@ async fn do_fuzz_iteration<'a, 'b>(
             corpus.insert(cov, newentry);
         }
     }
+
+    stats.corpus_size.store(corpus.len(), Ordering::SeqCst);
 }
 
 fn calculate_coverage(errormsg: &str) -> u64 {

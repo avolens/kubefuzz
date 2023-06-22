@@ -1,12 +1,12 @@
-//#![allow(dead_code, unused)]
+#![allow(dead_code, unused)]
 extern crate pretty_env_logger;
 extern crate serde_transcode;
 
 #[macro_use]
 extern crate log as rust_log;
+use crate::tui as tui_internal;
 use args::{Action, Arguments};
 use clap::Parser;
-mod runtime;
 
 mod args;
 mod conf;
@@ -14,6 +14,8 @@ mod executor;
 mod generator;
 mod log;
 mod mutator;
+mod runtime;
+mod tui;
 
 #[tokio::main]
 async fn main() {
