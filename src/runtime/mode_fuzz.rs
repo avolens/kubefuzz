@@ -1,7 +1,6 @@
 use crate::args::Fuzz;
 use crate::error_exit;
 use crate::executor::{deploy_resource, get_client};
-use crate::generator::gen;
 use crate::generator::k8sresc::K8sResourceSpec;
 use crate::generator::{gen::gen_resource, load_constrained_spec};
 use crate::mutator::mutate_resource;
@@ -10,9 +9,7 @@ use crate::tui::{tui_loop, tui_restore};
 use std::collections::HashMap;
 use std::hash::Hasher;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
-use std::time::Instant;
 use std::{fs, thread};
 use twox_hash::XxHash64;
 
@@ -73,15 +70,23 @@ pub async fn run(args: &Fuzz) {
         }
     }
 
-    let mut stats = FuzzingStats::default();
+    let stats = FuzzingStats::default();
     let fuzzer_stats = Arc::new(stats);
     let tui_stats = fuzzer_stats.clone();
 
     println!("~ ready to fuzz. Press enter to start ~");
-    std::io::stdin().read_line(&mut String::new());
+    std::io::stdin()
+        .read_line(&mut String::new())
+        .expect("failed to read line");
 
     let tui_thread = thread::spawn(move || {
-        tui_loop(tui_stats);
+        match tui_loop(tui_stats) {
+            Ok(()) => {}
+            Err(e) => {
+                tui_restore();
+                error_exit!("io error during TUI loop : {}", e);
+            }
+        }
         tui_restore();
     });
 
@@ -199,7 +204,7 @@ async fn submit_and_get_cov(
     let errormsg = match deploy_resource(&sample, client, &args.namespace).await {
         Ok(_) => {
             // we also want to save it to disk
-            save_sample(sample, args, FuzzResult::Accepted);
+            save_sample(sample, args, FuzzResult::Accepted)?;
             stats.accepted.fetch_add(1, Ordering::SeqCst);
 
             "".to_string()
@@ -235,7 +240,7 @@ async fn submit_and_get_cov(
                     "InternalError" => {
                         // this is an error happening in an admission controller,
                         // being unable to process the request. We can save this
-                        save_sample(sample, args, FuzzResult::Error);
+                        save_sample(sample, args, FuzzResult::Error)?;
                         stats.errors.fetch_add(1, Ordering::SeqCst);
 
                         stats
@@ -294,7 +299,7 @@ async fn do_fuzz_iteration<'a, 'b>(
     }
 
     // lets generate fresh manifests
-    for (gvk, constraint) in constraintmap {
+    for (_, constraint) in constraintmap {
         for _ in 0..args.generations {
             // todo: we wanna generate more samples at once here
             let sample = gen_resource(constraint);

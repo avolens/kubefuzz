@@ -15,7 +15,7 @@ use tui::{
     Terminal,
 };
 
-use crate::{error_exit, runtime::mode_fuzz::FuzzingStats};
+use crate::runtime::mode_fuzz::FuzzingStats;
 
 fn createterm() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     let mut stdout = io::stdout();
@@ -148,7 +148,7 @@ pub fn tui_loop(stats: Arc<FuzzingStats>) -> io::Result<()> {
             let paragraph = Paragraph::new(info).block(block).wrap(Wrap { trim: true });
 
             f.render_widget(paragraph, size);
-        });
+        })?;
 
         if event::poll(std::time::Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
