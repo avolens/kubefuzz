@@ -100,7 +100,7 @@ fn mutate_array(resource: &mut serde_json::Value, constraint: &K8sResourceSpec, 
     shuffle(resource.as_array_mut().unwrap());
 
     for _ in 0..gen_range(0, resource.as_array().unwrap().len()) {
-        let r = resource.as_array_mut().unwrap().pop();
+        resource.as_array_mut().unwrap().pop();
     }
 
     // 2. we might mutate all elements
