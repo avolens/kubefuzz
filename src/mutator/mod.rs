@@ -12,7 +12,6 @@ fn mutate_bool(resource: &mut serde_json::Value) {
 
 fn mutate_number(resource: &mut serde_json::Value, constraint: &K8sResourceSpec) {
     // three cases: magic values, arithmetic , random conform value
-    // todo: type confusion
 
     match gen_range(0, 3) {
         0 => {

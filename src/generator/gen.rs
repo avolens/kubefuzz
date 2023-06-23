@@ -21,8 +21,6 @@ pub fn gen_string(propname: &str, format: &Option<String>, is_quant: bool) -> se
     // handle quantaties
 
     if is_quant {
-        // todo: we have to do it manually, since there are only
-        // a few sensible quantaties
         return rand_str_regex("([+-]?[0-9]+)(m|k|M|G|T|P|E)").into();
     }
 

@@ -223,8 +223,9 @@ async fn submit_and_get_cov(
                     "BadRequest" => {
                         // this hints at an error in the resource itself, often
                         // happening due to go unmarshalling errors. So this is
-                        // not an error happening in an admission controller. We
-                        // add this to the corpus but we dont save it as an error
+                        // not an error happening in an admission controller. Not
+                        // very interesting
+                        return Ok((1)); // we might want to change this in the future
                     }
 
                     "Invalid" => {
@@ -233,10 +234,9 @@ async fn submit_and_get_cov(
                         // not descriptive enough. Still new coverage but we also
                         // do not save it as an error in an admission controller because
                         // it isn't.
+                        return Ok((0)); // we might want to change this in the future
                     }
 
-                    // todo: we haveto verify that InternalError is always thrown
-                    // for admission controller errors
                     "InternalError" => {
                         // this is an error happening in an admission controller,
                         // being unable to process the request. We can save this
@@ -301,7 +301,6 @@ async fn do_fuzz_iteration<'a, 'b>(
     // lets generate fresh manifests
     for (_, constraint) in constraintmap {
         for _ in 0..args.generations {
-            // todo: we wanna generate more samples at once here
             let sample = gen_resource(constraint);
             stats.generated.fetch_add(1, Ordering::SeqCst);
 
