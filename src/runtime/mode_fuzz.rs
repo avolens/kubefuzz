@@ -295,13 +295,15 @@ async fn do_fuzz_iteration<'a, 'b>(
 
     // lets generate fresh manifests
     for (gvk, constraint) in constraintmap {
-        // todo: we wanna generate more samples at once here
-        let sample = gen_resource(constraint);
-        stats.generated.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..args.generations {
+            // todo: we wanna generate more samples at once here
+            let sample = gen_resource(constraint);
+            stats.generated.fetch_add(1, Ordering::SeqCst);
 
-        let cov = submit_and_get_cov(client.clone(), &sample, args, stats.clone()).await?;
+            let cov = submit_and_get_cov(client.clone(), &sample, args, stats.clone()).await?;
 
-        newcov.push((cov, sample, constraint));
+            newcov.push((cov, sample, constraint));
+        }
     }
 
     // add new coverage to corpus

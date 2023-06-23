@@ -130,6 +130,10 @@ pub struct Fuzz {
     /// number of fuzzing iterations to perform, 0 = infinite
     #[arg(short, long, default_value = "0")]
     pub iterations: usize,
+
+    /// number of new generations per iteration per constraint
+    #[arg(short, long, default_value = "20")]
+    pub generations: usize,
 }
 
 #[derive(Parser, Debug)]
