@@ -11,8 +11,11 @@ macro_rules! error_exit
 
 pub fn initlog() {
     match env::var("RUST_LOG") {
-        Ok(_) => {} // If the RUST_LOG variable is already set, do nothing.
-        Err(_) => env::set_var("RUST_LOG", "info"), // If it's not set, set it to "error".
+        Ok(_) => {
+            let curlevel = env::var("RUST_LOG").unwrap();
+            env::set_var("RUST_LOG", format!("{},kube=off", curlevel));
+        }
+        Err(_) => env::set_var("RUST_LOG", "info,kube=off"),
     }
     pretty_env_logger::init();
 }
