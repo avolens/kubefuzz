@@ -86,16 +86,26 @@ pub async fn run(args: &Fuzz) {
     });
 
     let mut iter: usize = 0;
+    let mut err: FuzzError = FuzzError {
+        msg: "".to_string(),
+    };
 
     loop {
-        do_fuzz_iteration(
+        match do_fuzz_iteration(
             &client,
             &mut corpus,
             &constraintmap,
             args,
             fuzzer_stats.clone(),
         )
-        .await;
+        .await
+        {
+            Err(e) => {
+                err = e;
+                break;
+            }
+            Ok(()) => {}
+        }
 
         if args.iterations != 0 && iter >= args.iterations
             || fuzzer_stats.exit.load(Ordering::Relaxed)
@@ -108,6 +118,9 @@ pub async fn run(args: &Fuzz) {
 
     fuzzer_stats.exit.store(true, Ordering::Relaxed);
     tui_thread.join().unwrap();
+    if err.msg != "" {
+        info!("fuzzing stopped due to: {}", err.msg);
+    }
     info!("done fuzzing.");
 }
 
@@ -128,7 +141,11 @@ enum FuzzResult {
     Error,
 }
 
-fn save_sample(sample: &serde_json::Value, args: &Fuzz, result: FuzzResult) {
+fn save_sample(
+    sample: &serde_json::Value,
+    args: &Fuzz,
+    result: FuzzResult,
+) -> Result<(), FuzzError> {
     // first get number of saved samples in directory
 
     let dirpath = format!(
@@ -146,8 +163,9 @@ fn save_sample(sample: &serde_json::Value, args: &Fuzz, result: FuzzResult) {
             FuzzResult::Error => args.max_error,
         }
     {
-        info!("max disk corpus count reached in {}. Stopping.", &dirpath);
-        std::process::exit(0);
+        return Err(FuzzError {
+            msg: format!("max number of samples on disk reached for {}", dirpath),
+        });
     }
 
     // write sample to disk
@@ -156,8 +174,19 @@ fn save_sample(sample: &serde_json::Value, args: &Fuzz, result: FuzzResult) {
         dirpath,
         SAMPLE_COUNT.fetch_add(1, Ordering::SeqCst)
     );
-    let f = std::fs::File::create(fullpath).expect("failed to create file for sample");
-    serde_json::to_writer_pretty(f, sample).expect("failed to write sample to file");
+
+    let f = std::fs::File::create(fullpath).map_err(|e| FuzzError {
+        msg: format!("failed to create file: {}", e),
+    })?;
+    serde_json::to_writer_pretty(f, sample).map_err(|e| FuzzError {
+        msg: format!("failed to write sample to file: {}", e),
+    })?;
+
+    Ok(())
+}
+
+struct FuzzError {
+    pub msg: String,
 }
 
 async fn submit_and_get_cov(
@@ -165,7 +194,7 @@ async fn submit_and_get_cov(
     sample: &serde_json::Value,
     args: &Fuzz,
     stats: Arc<FuzzingStats>,
-) -> u64 {
+) -> Result<u64, FuzzError> {
     let mut returncode = 0;
     let errormsg = match deploy_resource(&sample, client, &args.namespace).await {
         Ok(_) => {
@@ -179,7 +208,9 @@ async fn submit_and_get_cov(
             returncode = ae.code;
 
             if ae.message.contains("connection refused") {
-                error_exit!("API returned connection refused for admission controller. Stopping. Answer: {:#?}", ae);
+                return Err(FuzzError {
+                    msg: format!("connection to admission controller refused: {}", ae.message),
+                });
             }
 
             match ae.status.as_str() {
@@ -216,20 +247,28 @@ async fn submit_and_get_cov(
                     }
                 },
                 _ => {
-                    error_exit!(
-                        "API returned unknown status on error that we cant handle {:#?}. Please report this",
-                        ae
-                    )
+                    return Err(FuzzError {
+                        msg: format!(
+                            "API returned error that we cannot handle. Please report. {:#?}",
+                            ae
+                        ),
+                    })
                 }
             }
 
             format!("{}{}", ae.reason, ae.message)
         }
 
-        Err(_) => panic!("unexpected error"),
+        Err(e) => {
+            return Err(FuzzError {
+                msg: format!("unexpected error type: {:#?}", e),
+            })
+        }
     };
 
-    calculate_coverage(format!("{}{}", returncode, errormsg).as_str())
+    Ok(calculate_coverage(
+        format!("{}{}", returncode, errormsg).as_str(),
+    ))
 }
 
 async fn do_fuzz_iteration<'a, 'b>(
@@ -238,7 +277,7 @@ async fn do_fuzz_iteration<'a, 'b>(
     constraintmap: &'b HashMap<String, K8sResourceSpec>,
     args: &Fuzz,
     stats: Arc<FuzzingStats>,
-) {
+) -> Result<(), FuzzError> {
     debug!("doing fuzzing iteration");
 
     let mut newcov = Vec::<(u64, serde_json::Value, &K8sResourceSpec)>::new();
@@ -249,7 +288,7 @@ async fn do_fuzz_iteration<'a, 'b>(
         mutate_resource(&mut newresource, entry.constraint);
         stats.mutated.fetch_add(1, Ordering::SeqCst);
 
-        let cov = submit_and_get_cov(client.clone(), &newresource, args, stats.clone()).await;
+        let cov = submit_and_get_cov(client.clone(), &newresource, args, stats.clone()).await?;
 
         newcov.push((cov, newresource, entry.constraint));
     }
@@ -260,7 +299,7 @@ async fn do_fuzz_iteration<'a, 'b>(
         let sample = gen_resource(constraint);
         stats.generated.fetch_add(1, Ordering::SeqCst);
 
-        let cov = submit_and_get_cov(client.clone(), &sample, args, stats.clone()).await;
+        let cov = submit_and_get_cov(client.clone(), &sample, args, stats.clone()).await?;
 
         newcov.push((cov, sample, constraint));
     }
@@ -286,6 +325,8 @@ async fn do_fuzz_iteration<'a, 'b>(
     }
 
     stats.corpus_size.store(corpus.len(), Ordering::SeqCst);
+
+    Ok(())
 }
 
 fn calculate_coverage(errormsg: &str) -> u64 {
