@@ -149,5 +149,16 @@ pub fn tui_loop(stats: Arc<FuzzingStats>) -> io::Result<()> {
 
             f.render_widget(paragraph, size);
         });
+
+        if event::poll(std::time::Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                if key.code == KeyCode::Char('c')
+                    && key.modifiers == crossterm::event::KeyModifiers::CONTROL
+                {
+                    stats.exit.store(true, Ordering::Relaxed);
+                    break Ok(());
+                }
+            }
+        }
     }
 }

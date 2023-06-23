@@ -77,12 +77,16 @@ pub async fn run(args: &Fuzz) {
     let fuzzer_stats = Arc::new(stats);
     let tui_stats = fuzzer_stats.clone();
 
+    println!("~ ready to fuzz. Press enter to start ~");
+    std::io::stdin().read_line(&mut String::new());
+
     let tui_thread = thread::spawn(move || {
         tui_loop(tui_stats);
         tui_restore();
     });
 
     let mut iter: usize = 0;
+
     loop {
         do_fuzz_iteration(
             &client,
@@ -93,7 +97,9 @@ pub async fn run(args: &Fuzz) {
         )
         .await;
 
-        if args.iterations != 0 && iter >= args.iterations {
+        if args.iterations != 0 && iter >= args.iterations
+            || fuzzer_stats.exit.load(Ordering::Relaxed)
+        {
             break;
         }
 
@@ -266,7 +272,7 @@ async fn do_fuzz_iteration<'a, 'b>(
                 data: val,
                 constraint: constraint,
             };
-            if corpus.len() > args.max_corpus_count {
+            if corpus.len() >= args.max_corpus_count {
                 // for now just remove a random entry
                 let key = corpus.keys().next().unwrap().clone();
                 corpus.remove(&key);
