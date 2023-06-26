@@ -17,9 +17,9 @@ kubectl proxy
 This will create a http interface which requires no authentication. Kubefuzz can now be pointed at this endpoint to pull all schemas from the cluster:
 
 ```
-user@lnx ~> kubectl proxy &
+usr@lnx ~> kubectl proxy &
 Starting to serve on 127.0.0.1:8001
-user@lnx ~> kubefuzz get-schemas --endpoint http://127.0.0.1:8001/openapi/v2
+usr@lnx ~> kubefuzz get-schemas --endpoint http://127.0.0.1:8001/openapi/v2
 Downloading schema
 Parsing schema
 Generating shared definitions

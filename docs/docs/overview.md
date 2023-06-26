@@ -9,7 +9,7 @@ Kubefuzz is a generative and mutative fuzzer for Kubernetes admission controller
 ## Modes of operation 
 
 ```terminal
-user@lnx ~> kubefuzz --help
+usr@lnx ~> kubefuzz --help
 Usage: kubefuzz [OPTIONS] <COMMAND>
 
 Commands:

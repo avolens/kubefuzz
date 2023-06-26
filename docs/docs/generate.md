@@ -7,7 +7,7 @@ sidebar_position: 5
 In generation mode KubeFuzz will generate random resources according to the user supplied constraint:
 
 ```terminal
-user@lnx ~> kubefuzz generate --help
+usr@lnx ~> kubefuzz generate --help
 generate manifests with constraints
 
 Usage: kubefuzz generate [OPTIONS] --constraints <CONSTRAINTS> --schemadir <SCHEMADIR> --out <OUT>
@@ -19,6 +19,11 @@ Options:
   -n, --num <NUM>                  number of manifests to generate per resource [default: 10]
   -h, --help                       Print help
 
-user@lnx ~> mkdir out
-user@lnx ~> kubefuzz generate -c /path/to/constraint.yaml,anotherconstraint.yaml -o out -s /path/to/schemas/
+usr@lnx ~> mkdir out
+usr@lnx ~> kubefuzz generate -c /path/to/constraint.yaml,anotherconstraint.yaml -o out -s /path/to/schemas/ -n 3
+ INFO  kubefuzz > running wiht seed 12029831824463961508
+ INFO  kubefuzz::generator > Reading constraint file: "..."
+ INFO  kubefuzz::generator > Reading spec file: "..."
+ WARN  kubefuzz::generator > overriding enum for field '$.spec.containers.securityContext.seccompProfile.type', original content : [String("Localhost"), String("RuntimeDefault"), String("Unconfined")]
+ INFO  kubefuzz::runtime::mode_generate > Done generating. Written 3 files
 ```
