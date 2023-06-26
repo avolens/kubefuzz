@@ -7,14 +7,14 @@ sidebar_position: 4
 Kubefuzz does not blindly generate resources based on their specs (but you could configure it that way) but rather follows a constraint that the user
 can supply, allowing fine grained control over which fields are generated and how
 
-Generally, constraining works in a allowlisting fashion. Every path that is not explicitly stated, is not generated (but every subpath of a specified
+Generally, constraining works in a allow listing fashion. Every path that is not explicitly stated, is not generated (but every subpath of a specified
 path *is* generated, if not otherwise explicitly disallowed)
 
-Constraints are created using a specific format which will be described here. One constraint config per resource type is required.
+Constraints are created using a specific format which will be described here. One constraint configuration per resource type is required.
 
 ## General format
 
-Constraint configs can be written in yaml or json. This guide will use yaml. Up front, here is an example constraint config for `core.v1.Pod`
+Constraint configurations can be written in yaml or json. This guide will use yaml. Up front, here is an example constraint configuration for `core.v1.Pod`
 
 ```yaml 
 gvk: ".v1.Pod" # what resources are we operating on? (group.version.kind)
@@ -55,14 +55,13 @@ fields:
 
 ### Required fields
 
-you need to atleast set the `gvk` and one entry in the fields array in order for KubeFuzz to work. The `gvk`
+You need to at least set the `gvk` and one entry in the fields array in order for KubeFuzz to work. The `gvk`
 specifies which resource to apply the constraint to. Note in the above example, the resource is `core.v1.pod`
 but the `core` group is actually implicitly set.
 
 ### Field array
 
-the field array contains a list of configurations that apply to one or multiple (if its a regex path) fields per item. Right up front, here
-are all possible fields for one such item in the array:
+The field array contains a list of configurations that apply to one or multiple (if its a regex path) fields per item. Right up front, here are all possible fields for one such item in the array:
 
 ```rust
 pub struct FieldConfig {
@@ -74,31 +73,23 @@ pub struct FieldConfig {
     pub minmax: Option<(usize, usize)>,
     pub remove: bool,
     pub regex: bool,
-
 }
 ```
-#### path, regex and required
 
-If you just want to enable a field to be generated, you can also just pass the field path instead of the fieldconfig object, as seen
-in the first entry in the example constraint. Note that by default, the path *may* be generated, but it can also be missing. To force
-the field to be present every time, set `required` to true
+#### Path, regex and required
 
-Paths may also be a regex. This way you can match multiple paths. Be sure to set `regex` to true in this case. Kubefuzz will throw an error
-if a path does not exist or a regex doesn't match a single path.
+If you just want to enable a field to be generated, you can also just pass the field path instead of the fieldconfig object, as seen in the first entry in the example constraint. Note that by default, the path *may* be generated, but it can also be missing. To force the field to be present every time, set `required` to true
 
-#### values, regex_values and values_mode
+Paths may also be a regex. This way you can match multiple paths. Be sure to set `regex` to true in this case. Kubefuzz will throw an error if a path does not exist or a regex doesn't match a single path.
 
-For some fields you may wish to generate more spcific values than just type confrom ones (like generic string,int etc). This can be done with
-`values` and `regex_values`. Both are arrays from which KubeFuzz is going to randomly chose to set a value. For `values`, you are free to supply
-any type, also full fledged objects. `regex_values` is an array of regex strings. Lastly, add `values_mode` to specify the behavior of KubeFuzz
-if there is an already existing enum at the fields place, possible values are `override` and `add`.
+#### Values, regex_values and values_mode
 
-#### minmax 
+For some fields you may wish to generate more specific values than just type conform ones (like generic string,int etc). This can be done with `values` and `regex_values`. Both are arrays from which KubeFuzz is going to randomly chose to set a value. For `values`, you are free to supply any type, also full fledged objects. `regex_values` is an array of regex strings. Lastly, add `values_mode` to specify the behavior of KubeFuzz if there is an already existing enum at the fields place, possible values are `override` and `add`.
+
+#### Minmax
 
 Minmax is an array with two elements, representing the minimum and maximum number of array elements for arrays.
 
+#### Remove
 
-#### remove
-
-If set to true, the path is explicitly removed. This can be usefull if you want to generate a whole subtree like "$.spec.containers" but now
-want to exclude "$.spec.containers.resources"
+If set to true, the path is explicitly removed. This can be useful if you want to generate a whole subtree like "\$.spec.containers" but now want to exclude "\$.spec.containers.resources"

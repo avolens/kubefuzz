@@ -2,7 +2,7 @@
 sidebar_position: 5 
 ---
 
-# Generation mode 
+# Generation mode
 
 In generation mode KubeFuzz will generate random resources according to the user supplied constraint:
 

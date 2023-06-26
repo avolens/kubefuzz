@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Tipps
 
-To make fuzzing more effective there are some things youmight want to be careful about.
+To make fuzzing more effective there are some things you might want to be careful about.
 
 ## Admission Controller Messages
 
@@ -21,7 +21,7 @@ flag). To counter this problem, it is advised to use generic, static messages fo
 When you discover an input that gets accepted or even crashes the admission controller,
 the natural next step would be to verify this effect. As AC chains may get very complex,
 there might be a state shared between controllers or internal states in ACs. This
-could lead to reproducability issues as the state has likely changed multiple times during
+could lead to reproducibility issues as the state has likely changed multiple times during
 fuzzing.
 
 ## Side Effects

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Overview
 
-Kubefuzz is a generative and mutative fuzzer for kubernetes admission controller chains. It can be used to uncover unexpected behavior in complex admission controller setups. It works by generating and mutating kubernetes resources according to the schema supplied by the cluster openapi scheme, and a user written constrain config that further limits what fields are generated and how.
+Kubefuzz is a generative and mutative fuzzer for Kubernetes admission controller chains. It can be used to uncover unexpected behavior in complex admission controller setups. It works by generating and mutating Kubernetes resources according to the schema supplied by the cluster openapi scheme, and a user written constrain configuration that further limits what fields are generated and how.
 
 ## Modes of operation 
 
@@ -24,5 +24,6 @@ Options:
   -h, --help         Print help
   -V, --version      Print version
 ```
+
 Kubefuzz can be run in 4 modes. To be able to use fuzzing, understanding the `fuzz` and the `get-schemas` mode and `constraints` is required.
 

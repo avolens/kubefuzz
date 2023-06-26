@@ -30,7 +30,7 @@ const FeatureList = [
     description: (
       <>
        Build in Rust and open sourced under the Apache 2.0 license, KubeFuzz benefits
-       from the kubernetes open source community.
+       from the Kubernetes open source community.
       </>
     ),
   },

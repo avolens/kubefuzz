@@ -4,14 +4,9 @@ sidebar_position: 3
 
 # Get-schmas mode
 
-In order for KubeFuzz to be able to work with the resources existent your cluster, it needs
-to know their basic structure. This includes for example required fields and value formats.
-With this knowledge, Kubefuzz can smartly generate random resources that still comply with
-the resource definition in a syntactic and semantic correct way (see known issues for edge cases).
+In order for KubeFuzz to be able to work with the resources existent your cluster, it needs to know their basic structure. This includes for example required fields and value formats. With this knowledge, Kubefuzz can smartly generate random resources that still comply with the resource definition in a syntactic and semantic correct way (see known issues for edge cases).
 
-Kubernetes automatically exposes resource schemas for every resource present in the cluster under the
-`/openapi/v2` endpoint. KubeFuzz uses openapi2json internally and *needs access to the openapi cluster
-endpoint*
+Kubernetes automatically exposes resource schemas for every resource present in the cluster under the `/openapi/v2` endpoint. KubeFuzz uses *openapi2json* internally and *needs access to the openapi cluster endpoint*
 
 Currently, this is achieved by running
 
@@ -19,8 +14,7 @@ Currently, this is achieved by running
 kubectl proxy
 ```
 
-this will create a http interface which requires no authentication. Kubefuzz can now be pointed at this
-endpoint to pull all schemas from the cluster:
+This will create a http interface which requires no authentication. Kubefuzz can now be pointed at this endpoint to pull all schemas from the cluster:
 
 ```
 user@lnx ~> kubectl proxy &
@@ -42,4 +36,4 @@ Processing servicereference
 ...
 ```
 
-This will download all schemas to the `schemas` folder in your current working directory
+This will download all schemas to the `schemas` folder in your current working directory.
