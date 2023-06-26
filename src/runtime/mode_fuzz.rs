@@ -225,7 +225,7 @@ async fn submit_and_get_cov(
                         // happening due to go unmarshalling errors. So this is
                         // not an error happening in an admission controller. Not
                         // very interesting
-                        return Ok((1)); // we might want to change this in the future
+                        return Ok(1); // we might want to change this in the future
                     }
 
                     "Invalid" => {
@@ -234,7 +234,7 @@ async fn submit_and_get_cov(
                         // not descriptive enough. Still new coverage but we also
                         // do not save it as an error in an admission controller because
                         // it isn't.
-                        return Ok((0)); // we might want to change this in the future
+                        return Ok(0); // we might want to change this in the future
                     }
 
                     "InternalError" => {
