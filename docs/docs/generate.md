@@ -22,5 +22,3 @@ Options:
 user@lnx ~> mkdir out
 user@lnx ~> kubefuzz generate -c /path/to/constraint.yaml,anotherconstraint.yaml -o out -s /path/to/schemas/
 ```
-
-
