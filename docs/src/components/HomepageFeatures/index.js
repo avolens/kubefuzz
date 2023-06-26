@@ -4,32 +4,33 @@ import styles from './styles.module.css';
 
 const FeatureList = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Test complex Admission Controller chains',
+    Svg: require('@site/static/img/peer-to-peer.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+       Configure resource generation using a simple constraint
+       language and let KubeFuzz automatically uncover unexpected behavior in your
+       cluster.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Supports all your resources',
+    Svg: require('@site/static/img/resources.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        KubeFuzz automatically understands your custom resource definitions and pulls
+        them from the cluser API to generate semantically correct test cases.
       </>
     ),
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'Open Source',
+    Svg: require('@site/static/img/configure.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+       Build in Rust and open sourced under the Apache 2.0 license, KubeFuzz benefits
+       from the kubernetes open source community.
       </>
     ),
   },
