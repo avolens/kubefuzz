@@ -213,6 +213,9 @@ async fn submit_and_get_cov(
             // we also want to save it to disk
             save_sample(sample, args, FuzzResult::Accepted)?;
             stats.accepted.fetch_add(1, Ordering::SeqCst);
+            stats
+                .last_accepted
+                .store(stats.starttime.elapsed().as_secs(), Ordering::SeqCst);
 
             "".to_string()
         }
