@@ -15,6 +15,15 @@ pub fn run(args: &GetSchemas) {
         }
     };
 
-    child.wait().expect("could not wait for child process");
+    match child.wait() {
+        Ok(status) => {
+            if !status.success() {
+                error_exit!("openapi2jsonschema failed with status: {}", status);
+            }
+        }
+        Err(e) => {
+            error_exit!("Error while waiting for openapi2jsonschema: {}", e);
+        }
+    }
     info!("done.")
 }
