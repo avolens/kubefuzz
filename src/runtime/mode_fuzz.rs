@@ -86,7 +86,6 @@ pub async fn run(args: &Fuzz) {
         .expect("failed to read line");
 
     let tui_thread = thread::spawn(move || {
-        return;
         match tui_loop(tui_stats) {
             Ok(()) => {}
             Err(e) => {
