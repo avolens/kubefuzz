@@ -202,7 +202,7 @@ fn mutate_object(resource: &mut serde_json::Value, constraint: &K8sResourceSpec,
             Value::String(_) => mutate_string(field, subconstraint, &key),
             Value::Array(_) => mutate_array(field, subconstraint, &subpath),
             Value::Object(_) => mutate_object(field, subconstraint, &subpath),
-            Value::Null => panic!("not implemented"),
+            Value::Null => {}
         }
     }
 
