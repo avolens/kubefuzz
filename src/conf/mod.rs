@@ -28,7 +28,9 @@ pub struct FieldConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConstraintConfig {
     pub fields: Vec<FieldConfig>,
-    pub gvk: String,
+    pub group: String,
+    pub version: String,
+    pub kind: String,
 }
 
 impl<'de> Deserialize<'de> for FieldConfig {

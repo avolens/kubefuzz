@@ -29,3 +29,7 @@ Now you can now either just build the project by running
 
 `cargo build -r ` or directly install it to your configured cargo binary path by issuing
 `cargo install --path`.
+
+## Additional dependencies
+
+To pull schemas form the cluster api, you will need to `pip install openapi2jsonschema`

@@ -18,20 +18,24 @@ pub fn run(args: &Generate) {
     let mut files_written: u64 = 0;
 
     for file in constraintfiles {
-        //load_constrained_spec(constrait);
         let cspec = load_constrained_spec(file, &args.schemadir);
-
-        // in case gvk starts with an empty group
-        let gvk = cspec.gvk.as_ref().unwrap();
-        let gvk_dir = match gvk.strip_prefix(".") {
-            Some(s) => s,
-            None => gvk,
-        };
 
         // make directory
         // .unwrap is safe here because of load_constrained_spec
-        let dir = PathBuf::from(&args.out).join(&gvk_dir);
+        let mut gvkdir = cspec.gvk.clone().unwrap().replace("/", "");
 
+        match gvkdir.strip_prefix(".") {
+            Some(s) => gvkdir = s.to_string(),
+            None => {}
+        }
+
+        let dir = PathBuf::from(&args.out).join(&gvkdir);
+
+        println!(
+            "Generating {} resources in {}",
+            args.num,
+            dir.to_str().unwrap()
+        );
         match std::fs::create_dir_all(&dir) {
             Ok(_) => {}
             Err(e) => {

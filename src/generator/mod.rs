@@ -342,23 +342,6 @@ fn constrain_spec(
     }
 }
 
-fn verify_gvk(gvk: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let parts: Vec<&str> = gvk.split(".").collect();
-    if parts.len() != 3 {
-        return Err("too few or too many parts in gvk. Expected 3, sperated by '.'".into());
-    }
-
-    if parts[1].is_empty() || parts[2].is_empty() {
-        return Err("version or kind cannot be empty".into());
-    }
-
-    if !parts[2].chars().next().unwrap().is_uppercase() {
-        return Err("kind must start with uppercase letter".into());
-    }
-
-    Ok(())
-}
-
 pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sResourceSpec {
     info!("Reading constraint file: {:?}", constraintfile_path);
 
@@ -386,15 +369,11 @@ pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sR
         };
 
     // verify gvk
-    match verify_gvk(&constraint_config.gvk) {
-        Ok(_) => {}
-        Err(e) => {
-            error_exit!(
-                "invalid gvk in constraint file '{}': {}",
-                constraintfile_path,
-                e
-            );
-        }
+    if constraint_config.version.is_empty() {
+        error_exit!("{}: version cannot be empty", constraintfile_path);
+    }
+    if constraint_config.kind.is_empty() {
+        error_exit!("{}: kind cannot be empty", constraintfile_path);
     }
 
     // verify regex
@@ -422,18 +401,16 @@ pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sR
         }
     }
 
-    let kind = constraint_config
-        .gvk
-        .split(".")
-        .last()
-        .unwrap()
-        .to_lowercase();
+    let kind = constraint_config.kind.to_lowercase();
 
     let fullpath = PathBuf::from(schemadir).join(&kind).with_extension("json");
 
     let mut spec = loadspec(fullpath.to_str().expect("invalid path"));
 
-    spec.gvk = Some(constraint_config.gvk.clone());
+    spec.gvk = Some(format!(
+        "{}.{}.{}",
+        constraint_config.group, constraint_config.version, constraint_config.kind
+    ));
 
     // first collect all allowed jsonpath into simple list
 

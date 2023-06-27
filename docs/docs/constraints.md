@@ -17,7 +17,9 @@ Constraints are created using a specific format which will be described here. On
 Constraint configurations can be written in yaml or json. This guide will use yaml. Up front, here is an example constraint configuration for `core.v1.Pod`
 
 ```yaml 
-gvk: ".v1.Pod" # what resources are we operating on? (group.version.kind)
+group: ""
+version: "v1"
+kind: "Pod"
 
 fields:
 - "$.spec.containers.securityContext" # simple paths without any extras, just the path as a string
@@ -55,8 +57,8 @@ fields:
 
 ### Required fields
 
-You need to at least set the `gvk` and one entry in the fields array in order for KubeFuzz to work. The `gvk`
-specifies which resource to apply the constraint to. Note in the above example, the resource is `core.v1.pod`
+You need to at least set the group, version, kind and one entry in the fields array in order for KubeFuzz to work. The `gvk`
+triple specifies which resource to apply the constraint to. Note in the above example, the resource is `core.v1.pod`
 but the `core` group is actually implicitly set.
 
 ### Field array
