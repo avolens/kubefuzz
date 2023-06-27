@@ -43,7 +43,7 @@ impl<'de> Deserialize<'de> for K8sResourceSpec {
         #[derive(Deserialize)]
         struct Intermediate {
             #[serde(rename = "type")]
-            _type: String,
+            _type: Option<String>,
             #[serde(default)]
             properties: HashMap<String, Box<K8sResourceSpec>>,
             #[serde(rename = "enum", default)]
@@ -66,8 +66,13 @@ impl<'de> Deserialize<'de> for K8sResourceSpec {
             .description
             .map_or(false, |desc| desc.contains("quantity"));
 
+        // some specs also seem to have no type :c
+
         Ok(K8sResourceSpec {
-            _type: intermediate._type,
+            _type: match intermediate._type {
+                Some(t) => t,
+                None => "string".to_string(),
+            },
             properties: intermediate.properties,
             _enum: intermediate._enum,
             _enum_regex: intermediate._enum_regex,
