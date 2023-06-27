@@ -17,9 +17,14 @@ pub fn run(args: &Mutate) {
     for constraintfile in args.constraints[0].split(",") {
         let spec = load_constrained_spec(&constraintfile, &args.schemadir);
 
-        let gvk = spec.gvk.as_ref().unwrap();
+        let gvk = format!(
+            "{}.{}.{}",
+            spec.group.clone().expect("expected group"),
+            spec.version.clone().expect("expected version"),
+            spec.kind.clone().expect("expected kind")
+        );
 
-        if cmap.contains_key(gvk) {
+        if cmap.contains_key(&gvk) {
             error_exit!(
                 "Error loading constraints: duplicate gvk {}. Second key seen in {}",
                 gvk,

@@ -186,13 +186,13 @@ pub fn gen_resource(spec: &K8sResourceSpec) -> serde_json::Value {
     // lastly we make sure that version, kind and name are correctly set
     // as they are required by the API
 
-    let gvkv = spec.gvk.as_ref().unwrap().split('.').collect::<Vec<&str>>();
+    resc["apiVersion"] = match &spec.group {
+        Some(group) => format!("{}/{}", group, spec.version.as_ref().unwrap()),
+        None => spec.version.as_ref().unwrap().clone(),
+    }
+    .into();
 
-    resc["apiVersion"] = match gvkv[0] {
-        "" => format!("{}", gvkv[1]).into(),
-        _ => format!("{}/{}", gvkv[0], gvkv[1]).into(),
-    };
-    resc["kind"] = gvkv[2].into();
+    resc["kind"] = spec.kind.clone().unwrap().into();
 
     resc["metadata"]["name"] = format!(
         "kubefuzz-{}",

@@ -22,7 +22,13 @@ pub fn run(args: &Generate) {
 
         // make directory
         // .unwrap is safe here because of load_constrained_spec
-        let mut gvkdir = cspec.gvk.clone().unwrap().replace("/", "");
+        let mut gvkdir = format!(
+            "{}.{}.{}",
+            cspec.group.as_ref().expect("expected group"),
+            cspec.version.as_ref().expect("expected version"),
+            cspec.kind.as_ref().expect("expected kind")
+        )
+        .replace("/", ".");
 
         match gvkdir.strip_prefix(".") {
             Some(s) => gvkdir = s.to_string(),

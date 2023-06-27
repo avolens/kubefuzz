@@ -407,10 +407,9 @@ pub fn load_constrained_spec(constraintfile_path: &str, schemadir: &str) -> K8sR
 
     let mut spec = loadspec(fullpath.to_str().expect("invalid path"));
 
-    spec.gvk = Some(format!(
-        "{}.{}.{}",
-        constraint_config.group, constraint_config.version, constraint_config.kind
-    ));
+    spec.group = Some(constraint_config.group.clone());
+    spec.kind = Some(constraint_config.kind.clone());
+    spec.version = Some(constraint_config.version.clone());
 
     // first collect all allowed jsonpath into simple list
 

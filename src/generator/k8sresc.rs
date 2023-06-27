@@ -32,7 +32,9 @@ pub struct K8sResourceSpec {
     pub additional_properties: Option<Box<K8sResourceSpec>>,
 
     // set later at runtime based on constraint config
-    pub gvk: Option<String>,
+    pub group: Option<String>,
+    pub version: Option<String>,
+    pub kind: Option<String>,
 }
 
 impl<'de> Deserialize<'de> for K8sResourceSpec {
@@ -58,7 +60,6 @@ impl<'de> Deserialize<'de> for K8sResourceSpec {
             #[serde(rename = "additionalProperties")]
             additional_properties: Option<Box<K8sResourceSpec>>,
             description: Option<String>,
-            gvk: Option<String>,
         }
 
         let intermediate: Intermediate = Intermediate::deserialize(deserializer)?;
@@ -67,7 +68,6 @@ impl<'de> Deserialize<'de> for K8sResourceSpec {
             .map_or(false, |desc| desc.contains("quantity"));
 
         // some specs also seem to have no type :c
-
         Ok(K8sResourceSpec {
             _type: match intermediate._type {
                 Some(t) => t,
@@ -81,8 +81,10 @@ impl<'de> Deserialize<'de> for K8sResourceSpec {
             items: intermediate.items,
             format: intermediate.format,
             additional_properties: intermediate.additional_properties,
-            gvk: intermediate.gvk,
             is_quant,
+            group: None,
+            version: None,
+            kind: None,
         })
     }
 }

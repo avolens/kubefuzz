@@ -59,7 +59,13 @@ pub async fn run(args: &Fuzz) {
 
     for file in args.constraints[0].split(",") {
         let cspec = load_constrained_spec(file, &args.schemadir);
-        constraintmap.insert(cspec.gvk.clone().unwrap(), cspec);
+        let gvk = format!(
+            "{}.{}.{}",
+            cspec.group.clone().expect("expected group"),
+            cspec.version.clone().expect("expected version"),
+            cspec.kind.clone().expect("expected kind")
+        );
+        constraintmap.insert(gvk, cspec);
     }
 
     // prepare fuzzing directory
@@ -80,6 +86,7 @@ pub async fn run(args: &Fuzz) {
         .expect("failed to read line");
 
     let tui_thread = thread::spawn(move || {
+        return;
         match tui_loop(tui_stats) {
             Ok(()) => {}
             Err(e) => {
