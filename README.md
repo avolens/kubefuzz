@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c6fd71ec-9f4e-4b7b-8c66-8847c80c315a/deploy-status)](https://app.netlify.com/sites/venerable-elf-25fd96/deploys)
+
 # Kubefuzz
 
 ![](arch/architecture.drawio.png)
