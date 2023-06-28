@@ -4,7 +4,6 @@ extern crate serde_transcode;
 
 #[macro_use]
 extern crate log as rust_log;
-use crate::tui as tui_internal;
 use args::{Action, Arguments};
 use clap::Parser;
 
