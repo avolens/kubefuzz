@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8 
+sidebar_position: 9 
 ---
 
 # Tipps
@@ -29,3 +29,8 @@ fuzzing.
 Be careful about admission controller side effects, such as file writes (like logging)
 or network communication. KubeFuzz will ensure that the `dryrun` flag is added on every
 request but cannot make the admission controllers behave completely side effect free.
+
+## Debugging
+
+The `--notui` option in fuzzing mode can be helpful to debug the API submission process. Additionally enabeling logging
+will give you insights how admission controllers react to the generated resources.

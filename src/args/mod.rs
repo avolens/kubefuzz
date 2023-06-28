@@ -134,6 +134,10 @@ pub struct Fuzz {
     /// number of new generations per iteration per constraint
     #[arg(short, long, default_value = "20")]
     pub generations: usize,
+
+    /// disable the TUI
+    #[arg(long, default_value = "false")]
+    pub notui: bool,
 }
 
 #[derive(Parser, Debug)]

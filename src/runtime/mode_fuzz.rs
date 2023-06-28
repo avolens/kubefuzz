@@ -85,7 +85,11 @@ pub async fn run(args: &Fuzz) {
         .read_line(&mut String::new())
         .expect("failed to read line");
 
+    let notui = args.notui;
     let tui_thread = thread::spawn(move || {
+        if notui {
+            return;
+        }
         match tui_loop(tui_stats) {
             Ok(()) => {}
             Err(e) => {
@@ -206,9 +210,11 @@ async fn submit_and_get_cov(
     args: &Fuzz,
     stats: Arc<FuzzingStats>,
 ) -> Result<u64, FuzzError> {
+    debug!("submitting sample to API");
     let mut returncode = 0;
     let errormsg = match deploy_resource(&sample, client, &args.namespace).await {
         Ok(_) => {
+            debug!("submission was ok.");
             // we also want to save it to disk
             save_sample(sample, args, FuzzResult::Accepted)?;
             stats.accepted.fetch_add(1, Ordering::SeqCst);
@@ -219,6 +225,7 @@ async fn submit_and_get_cov(
             "".to_string()
         }
         Err(kube::Error::Api(ae)) => {
+            debug!("submission failed: {:?}", ae);
             returncode = ae.code;
 
             if ae.message.contains("connection refused") {
@@ -280,6 +287,7 @@ async fn submit_and_get_cov(
         }
     };
 
+    debug!("returning with coverage: {}{}", returncode, errormsg);
     Ok(calculate_coverage(
         format!("{}{}", returncode, errormsg).as_str(),
     ))

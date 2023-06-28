@@ -46,6 +46,8 @@ Options:
           number of fuzzing iterations to perform, 0 = infinite [default: 0]
   -g, --generations <GENERATIONS>
           number of new generations per iteration per constraint [default: 20]
+      --notui
+          disable the TUI
   -h, --help
           Print help
 
