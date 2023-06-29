@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Get-schmas mode
+# Get-schemas mode
 
 In order for KubeFuzz to be able to work with the resources existent your cluster, it needs to know their basic structure. This includes for example required fields and value formats. With this knowledge, Kubefuzz can smartly generate random resources that still comply with the resource definition in a syntactic and semantic correct way (see known issues for edge cases).
 
