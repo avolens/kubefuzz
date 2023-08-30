@@ -1,0 +1,9 @@
+group: "example.fuzz"
+version: "v1"
+kind: "fooddeliveryorder"
+
+
+
+fields:
+- path: "$.spec"
+  required: true
