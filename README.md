@@ -10,7 +10,7 @@ by generating and mutating kubernetes resources according to the schema supplied
 openapi scheme, and a user written constrain config that further limits what fields are generated
 and how.
 
-[![asciicast](https://asciinema.org/a/6rkj1Uy0S9t3ZOEBl9wbkUUu4.svg)](https://asciinema.org/a/6rkj1Uy0S9t3ZOEBl9wbkUUu4)
+![](arch/demo.gif)
 
 # Building
 
