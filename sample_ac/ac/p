@@ -1,7 +1,0 @@
-#!/bin/bash
-docker build . -t myac
-docker tag myac:latest registry.avolens.com/kubefuzz/sample_ac:dev
-docker push registry.avolens.com/kubefuzz/sample_ac:dev
-k delete -f deployment.yaml
-sleep 10
-k apply -f deployment.yaml

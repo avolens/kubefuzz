@@ -8,10 +8,10 @@ spec:
       price: 10.99
     - name: Salad
       price: 5.99
-  deliveryAddress: "123 Main St, City"
+  deliveryAddress: "123 Mainstreet, City 1337"
   couponCode:
     code: "SAVE20"
-    discount: 20
+    discount: 10
   status:
     payed: true
     delivered: false
