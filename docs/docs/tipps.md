@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9 
+sidebar_position: 6
 ---
 
 # Tipps
@@ -13,7 +13,7 @@ unique AC message will cause a new coverage event when fuzzing. When an AC emits
 input dependant messages like `pod <podname> may not have be privileged` (the podname may be random),
 it will cause a lot of "new" coverage which may lead to the eviction of actual useful coverage events
 in the case of low free corpus capacity (you can change the in memory corpus capacity with the `--max-corpus-count`
-flag). To counter this problem, it is advised to use generic, static messages for each cause of denial such as 
+flag). To counter this problem, it is advised to use generic, static messages for each cause of denial such as
 `one pod was privileged`
 
 ## Reproducability and Statefullness

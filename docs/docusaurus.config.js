@@ -11,7 +11,7 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://kubefuzz.avolens.com',
+  url: 'https://kubefuzz.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -58,7 +58,7 @@ const config = {
     ({
       announcementBar: {
         id: 'tr23-talk',
-        content: 'KubeFuzz will be presented at <a target="_blank" rel="noopener noreferrer" href="https://troopers.de/troopers23/talks/cffrvv/">TROOPERS23</a>! 🚀',
+        content: 'KubeFuzz was presented at <a target="_blank" rel="noopener noreferrer" href="https://troopers.de/troopers23/talks/cffrvv/">TROOPERS23</a>! 🚀',
         backgroundColor: '#FFA314',
         textColor: '#fff',
         isCloseable: true,

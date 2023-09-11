@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4 
+sidebar_position: 2
 ---
 
 # Constraints
@@ -16,7 +16,7 @@ Constraints are created using a specific format which will be described here. On
 
 Constraint configurations can be written in yaml or json. This guide will use yaml. Up front, here is an example constraint configuration for `core.v1.Pod`
 
-```yaml 
+```yaml
 group: ""
 version: "v1"
 kind: "Pod"
