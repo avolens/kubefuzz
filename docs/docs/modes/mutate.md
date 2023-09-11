@@ -1,8 +1,8 @@
 ---
-sidebar_position: 6
+sidebar_position: 3
 ---
 
-# Mutation mode 
+# Mutation mode
 
 In mutation mode KubeFuzz will mutate existing resources according to the user supplied constraint:
 
@@ -27,4 +27,4 @@ usr@lnx ~> kubefuzz mutate -s src/schemagen/schemas/ -c constraint.yaml -o /tmp/
  INFO  kubefuzz::generator > Reading spec file: "..."
  WARN  kubefuzz::generator > overriding enum for field '$.spec.containers.securityContext.seccompProfile.type', original content : [String("Localhost"), String("RuntimeDefault"), String("Unconfined")]
  INFO  kubefuzz::runtime::mode_mutate > Done mutating. Written 20 files
-``` 
+```

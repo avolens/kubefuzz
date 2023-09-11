@@ -175,6 +175,7 @@ pub fn gen_property(spec: &K8sResourceSpec, propname: &str) -> serde_json::Value
         "boolean" => return gen_bool(),
         "array" => return gen_array(spec, propname),
         "integer" => return gen_int(propname, &spec.format),
+        "number" => return gen_int(propname, &spec.format), // TODO: number differs from integer
 
         &_ => panic!("type not covered"),
     }

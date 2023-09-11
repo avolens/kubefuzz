@@ -343,7 +343,9 @@ async fn do_fuzz_iteration<'a, 'b>(
             stats.newcov.fetch_add(1, Ordering::SeqCst);
             stats
                 .last_newcov
-                .store(stats.starttime.elapsed().as_secs(), Ordering::SeqCst);
+                // sometimes not even a whole second has passed
+                // so we add 1 to make sure we never get a zero delta
+                .store(stats.starttime.elapsed().as_secs() + 1, Ordering::SeqCst);
         }
     }
 

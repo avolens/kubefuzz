@@ -57,7 +57,7 @@ pub fn gen_printable_string(length: usize, charset: Option<&[u8]>) -> String {
     // I'ts better to generate a string that is too restrictive than one that
     // is too permissive and straight up fails validation.
     const PRINTABLE_CHARS: &[u8] =
-        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,-_";
 
     let cs = match charset {
         Some(cs) => cs,
