@@ -1,0 +1,11 @@
+group: "example.fuzz"
+version: "v1"
+kind: "FoodDeliveryOrder"
+
+
+fields:
+- path: "$.spec"
+  required: true
+
+- path: "$.spec.items"
+  minmax: [1,4]

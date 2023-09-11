@@ -1,0 +1,18 @@
+apiVersion: example.fuzz/v1
+kind: FoodDeliveryOrder
+metadata:
+  name: kubefuzz-example-order
+spec:
+  items:
+    - name: Pizza
+      price: 10.99
+    - name: Salad
+      price: 5.99
+  deliveryAddress: "123 Mainstreet, City 1337"
+  couponCode:
+    code: "SAVE20"
+    discount: 10
+  status:
+    payed: true
+    delivered: false
+
