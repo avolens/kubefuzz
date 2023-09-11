@@ -112,8 +112,8 @@ const config = {
                 to: 'docs/intro',
               },
               {
-                label: 'Overview',
-                to: 'docs/overview',
+                label: 'Example',
+                to: 'docs/example',
               },
               {
                 label: 'Tipps',

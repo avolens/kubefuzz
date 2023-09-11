@@ -29,7 +29,7 @@ const FeatureList = [
     Svg: require('@site/static/img/configure.svg').default,
     description: (
       <>
-       Build in Rust and open sourced under the Apache 2.0 license, KubeFuzz benefits
+       Built in Rust and open sourced under the Apache 2.0 license, KubeFuzz benefits
        from the Kubernetes open source community.
       </>
     ),
