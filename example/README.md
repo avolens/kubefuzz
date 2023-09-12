@@ -15,7 +15,7 @@ You can also build the AC yourself by refering to the dockerfile.
 
 ## Deploy the sample Admission Controller
 
-1. create the kubefuzz namespace: `kubectl namespace create kubefuzz`
+1. create the kubefuzz namespace: `kubectl create namespace kubefuzz`
 2. deploy the custom resource: `kubectl apply -f fooddeliveryorder-crd.yaml`
 3. deploy the admission controller: `kubectl apply -f deployment.yaml`
 4. deploy the admission controller config: `kubectl apply -f validatingac.yaml`
